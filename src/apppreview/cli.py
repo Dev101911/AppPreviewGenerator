@@ -7,13 +7,17 @@ from __future__ import annotations
 
 import json
 import sys
+from pathlib import Path
 
 import click
+import yaml
 
 from apppreview import __version__
+from apppreview.config import DEFAULT_CONFIG, STARTER_CONFIG, build, config_schema, template_schema
 from apppreview.errors import AppPreviewError
 from apppreview.generate import MODES, generate
 from apppreview.specs import STORES, format_sizes, get_target, load_targets
+from apppreview.template import builtin_templates
 from apppreview.validate import ERROR, identify, validate_images
 
 EXIT_OK, EXIT_INVALID, EXIT_USAGE = 0, 1, 2
@@ -158,17 +162,38 @@ def _badge(severity: str) -> str:
 @click.option("--format", "fmt", type=click.Choice(["png", "jpeg"]), help="Output format [default: png].")
 @click.option("--size", help="Exact output size WIDTHxHEIGHT; must be accepted by every target.")
 @click.option("--dry-run", is_flag=True, help="Report what would be written without writing files.")
+@click.option("--template", help="Template name (see `apppreview templates`) or template .yaml path.")
+@click.option("--caption", "captions", multiple=True, help="Caption per image, in order. Implies a template.")
+@click.option("--subtitle", "subtitles", multiple=True, help="Subtitle per image, in order.")
 @json_option
-def generate_cmd(images, target_ids, out_dir, mode, background, fmt, size, dry_run, as_json):
+def generate_cmd(
+    images, target_ids, out_dir, mode, background, fmt, size, dry_run, template, captions, subtitles, as_json
+):
     """Resize IMAGES into compliant screenshots for one or more targets.
 
     Output goes to OUT/<target-id>/NN_<name>.<ext> and is re-validated.
+    With --template or --caption, screenshots are placed on a styled canvas.
     """
     try:
-        result = generate(images, target_ids, out_dir, mode, background, fmt, size, dry_run)
+        result = generate(
+            images,
+            target_ids,
+            out_dir,
+            mode,
+            background,
+            fmt,
+            size,
+            dry_run,
+            template=template,
+            captions=list(captions) or None,
+            subtitles=list(subtitles) or None,
+        )
     except AppPreviewError as exc:
         fail(exc, as_json)
+    _report_outputs(result, dry_run, as_json)
 
+
+def _report_outputs(result, dry_run: bool, as_json: bool):
     if as_json:
         emit_json(result.to_dict())
     else:
@@ -177,12 +202,71 @@ def generate_cmd(images, target_ids, out_dir, mode, background, fmt, size, dry_r
             click.echo(f"{verb} {o.path}  ({o.width}x{o.height} {o.format})")
             for warning in o.warnings:
                 click.echo(f"      warn:  {warning}")
-        for report in result.reports:
+        for entry in result.reports:
+            locale, report = entry if isinstance(entry, tuple) else (None, entry)
+            label = f"{locale}/{report.target.id}" if locale else report.target.id
             for issue in report.all_issues:
-                click.echo(f"{_badge(issue.severity)} {report.target.id}: {issue.message}")
+                click.echo(f"{_badge(issue.severity)} {label}: {issue.message}")
         if not dry_run:
             click.echo("\nAll outputs are compliant." if result.ok else "\nSome outputs failed validation.")
     sys.exit(EXIT_OK if result.ok else EXIT_INVALID)
+
+
+@main.command(name="build")
+@click.argument("config", default=DEFAULT_CONFIG, type=click.Path())
+@click.option("-t", "--target", "only_targets", multiple=True, help="Only build these targets.")
+@click.option("-l", "--locale", "only_locales", multiple=True, help="Only build these locales.")
+@click.option("--dry-run", is_flag=True, help="Check the config and list outputs without rendering.")
+@json_option
+def build_cmd(config, only_targets, only_locales, dry_run, as_json):
+    """Render every screen x target x locale defined in CONFIG (default: apppreview.yaml)."""
+    try:
+        result = build(config, only_targets, only_locales, dry_run)
+    except AppPreviewError as exc:
+        fail(exc, as_json)
+    _report_outputs(result, dry_run, as_json)
+
+
+@main.command(name="init")
+@click.argument("path", default=DEFAULT_CONFIG, type=click.Path())
+@click.option("--force", is_flag=True, help="Overwrite an existing file.")
+@json_option
+def init_cmd(path, force, as_json):
+    """Write a starter apppreview.yaml."""
+    target = Path(path)
+    if target.exists() and not force:
+        fail(AppPreviewError("file_exists", f"{target} already exists; use --force to overwrite"), as_json)
+    target.write_text(STARTER_CONFIG, "utf-8")
+    if as_json:
+        emit_json({"ok": True, "path": str(target)})
+    else:
+        click.echo(f"Wrote {target}. Edit the screens, then run `apppreview build`.")
+
+
+@main.command(name="templates")
+@click.argument("name", required=False)
+@json_option
+def templates_cmd(name, as_json):
+    """List built-in templates, or show one template's full settings."""
+    templates = builtin_templates()
+    if name:
+        if name not in templates:
+            fail(AppPreviewError("unknown_template", f"Unknown template '{name}'"), as_json)
+        data = templates[name].model_dump(by_alias=True)
+        click.echo(json.dumps(data, indent=2) if as_json else yaml.safe_dump(data, sort_keys=False))
+        return
+    if as_json:
+        emit_json([t.model_dump(by_alias=True) for t in templates.values()])
+        return
+    for t in templates.values():
+        click.echo(f"{t.name:<10} {t.description}")
+
+
+@main.command(name="schema")
+@click.argument("kind", type=click.Choice(["config", "template"]))
+def schema_cmd(kind):
+    """Print the JSON Schema for the config file or for templates."""
+    emit_json(config_schema() if kind == "config" else template_schema())
 
 
 @main.command(name="identify")

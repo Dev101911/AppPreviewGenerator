@@ -50,6 +50,7 @@
       "constraints": {"min_side": 384, "max_side": 3840, "aspects": ["1:1"]},
       "recommended_sizes": [[384, 384]],
       "frames_allowed": false,
+      "templates_allowed": false,
       "notes": ["Show only the app interface: no device frames, extra text, graphics, backgrounds, transparency or masking."]
     },
     {
@@ -68,6 +69,8 @@
     },
     {
       "id": "google.automotive",
+      "templates_allowed": false,
+      "frames_allowed": false,
       "name": "Android Automotive OS",
       "count": {"min": 4, "max": 8},
       "constraints": null,
@@ -95,6 +98,8 @@
     },
     {
       "id": "google.icon",
+      "templates_allowed": false,
+      "frames_allowed": false,
       "name": "App icon",
       "kind": "icon",
       "formats": ["png"],

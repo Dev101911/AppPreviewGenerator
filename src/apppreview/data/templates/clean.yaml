@@ -1,0 +1,6 @@
+name: clean
+description: Soft light gradient, dark bold caption on top, rounded screenshot with shadow.
+background:
+  gradient: {from: "#F5F7FB", to: "#DCE3F0", angle: 180}
+caption: {color: "#0F172A"}
+subtitle: {color: "#475569"}

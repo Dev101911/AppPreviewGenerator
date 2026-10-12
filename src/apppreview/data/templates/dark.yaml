@@ -1,0 +1,9 @@
+name: dark
+description: Deep navy gradient with white caption; good for dark-mode apps.
+background:
+  gradient: {from: "#1E293B", to: "#020617", angle: 180}
+caption: {color: "#FFFFFF"}
+subtitle: {color: "#CBD5E1"}
+screenshot:
+  shadow: {color: "#00000099", blur: 0.03, offset: 0.015}
+  border: "#334155"

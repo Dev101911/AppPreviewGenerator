@@ -8,8 +8,10 @@ from pathlib import Path
 
 from PIL import Image, ImageColor, ImageOps, ImageStat, UnidentifiedImageError
 
+from apppreview.compose import compose
 from apppreview.errors import AppPreviewError
 from apppreview.specs import Size, Target, format_sizes, get_target, size_problems
+from apppreview.template import Template, load_template
 from apppreview.validate import Report, validate_images
 
 MODES = ("fit", "fill", "stretch")
@@ -25,8 +27,10 @@ class Output:
     width: int
     height: int
     format: str
-    scale: float
+    scale: float | None
     warnings: list[str] = field(default_factory=list)
+    locale: str | None = None
+    screen: str | None = None
 
     def to_dict(self) -> dict:
         return {
@@ -36,8 +40,10 @@ class Output:
             "width": self.width,
             "height": self.height,
             "format": self.format,
-            "scale": round(self.scale, 3),
+            "scale": None if self.scale is None else round(self.scale, 3),
             "warnings": self.warnings,
+            **({"locale": self.locale} if self.locale else {}),
+            **({"screen": self.screen} if self.screen else {}),
         }
 
 
@@ -96,8 +102,8 @@ def choose_size(target: Target, width: int, height: int) -> Size:
     return next(s for s in pool if aspect_diff(s) <= best + 0.01)
 
 
-def resolve_background(spec: str, img: Image.Image) -> tuple[int, int, int]:
-    if spec == "auto":
+def resolve_background(spec: str, img: Image.Image | None) -> tuple[int, int, int]:
+    if spec == "auto" and img is not None:
         return _edge_color(img)
     try:
         return ImageColor.getrgb(spec)[:3]
@@ -141,6 +147,93 @@ def render(
     return flat, scale
 
 
+def check_target_options(target: Target, count: int, fmt: str | None, size: Size | None, templated: bool) -> None:
+    """Raise AppPreviewError if the requested options can never produce compliant output."""
+    if count > target.count_max:
+        raise AppPreviewError("too_many_images", f"{count} images given; {target.id} allows at most {target.count_max}")
+    if fmt and fmt not in target.formats:
+        raise AppPreviewError(
+            "invalid_format", f"{target.id} does not accept {fmt}; allowed: {', '.join(target.formats)}"
+        )
+    if size and size_problems(target, *size):
+        raise AppPreviewError(
+            "invalid_size",
+            f"{size[0]}x{size[1]} is not accepted by {target.id}: {'; '.join(size_problems(target, *size))}"
+            + (f". Accepted: {format_sizes(target.sizes)}" if target.sizes else ""),
+        )
+    if templated and not target.templates_allowed:
+        raise AppPreviewError(
+            "template_not_allowed",
+            f"{target.id} screenshots must show only the app UI; captions and backgrounds are not allowed",
+        )
+
+
+def load_source(path) -> Image.Image:
+    try:
+        with Image.open(path) as img:
+            img.load()
+            return img.copy()
+    except FileNotFoundError:
+        raise AppPreviewError("input_not_found", f"Input not found: {path}") from None
+    except (UnidentifiedImageError, OSError) as exc:
+        raise AppPreviewError("input_unreadable", f"Cannot read image {path}: {exc}") from None
+
+
+def _plain_scale(source: Size, out: Size, mode: str) -> float:
+    ratios = (out[0] / source[0], out[1] / source[1])
+    return min(ratios) if mode == "fit" else max(ratios)
+
+
+def produce(
+    img: Image.Image,
+    target: Target,
+    dest: Path,
+    *,
+    size: Size | None = None,
+    fmt: str | None = None,
+    mode: str = "fit",
+    background: str = "#ffffff",
+    template: Template | None = None,
+    caption: str | None = None,
+    subtitle: str | None = None,
+    dry_run: bool = False,
+) -> tuple[Size, str, float | None, list[str]]:
+    """Render one image for one target and save it to `dest` (with the right extension).
+
+    Returns (output size, format, scale, warnings). Nothing is rendered or written on a dry run.
+    """
+    target_format = fmt or target.formats[0]
+    source_size = ImageOps.exif_transpose(img).size
+    out_size = size or choose_size(target, *source_size)
+    warnings: list[str] = []
+
+    if template:
+        scale = None
+        if not dry_run:
+            rendered, scale, warnings = compose(img, out_size, template, caption, subtitle)
+    else:
+        scale = _plain_scale(source_size, out_size, mode)
+        if scale > UPSCALE_WARNING:
+            warnings.append(f"Source is upscaled {scale:.2f}x; output may look blurry")
+        if mode == "fit" and abs(source_size[0] / source_size[1] - out_size[0] / out_size[1]) > 0.01:
+            warnings.append("Aspect ratios differ; output is letterboxed (use --mode fill to crop instead)")
+        if not dry_run:
+            keep_alpha = target.alpha and target_format == "png"
+            rendered, _ = render(img, out_size, mode, resolve_background(background, img), keep_alpha)
+
+    if not dry_run:
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        if target_format == "jpeg":
+            rendered.save(dest, "JPEG", quality=92, optimize=True)
+        else:
+            rendered.save(dest, "PNG", optimize=True)
+    return out_size, target_format, scale, warnings
+
+
+def output_name(index: int, stem: str, fmt: str) -> str:
+    return f"{index:02d}_{stem}.{_EXT[fmt]}"
+
+
 def generate(
     inputs,
     targets,
@@ -150,6 +243,9 @@ def generate(
     fmt: str | None = None,
     size: str | Size | None = None,
     dry_run: bool = False,
+    template: str | Template | None = None,
+    captions: list[str] | None = None,
+    subtitles: list[str] | None = None,
 ) -> GenerateResult:
     if mode not in MODES:
         raise AppPreviewError("invalid_mode", f"Invalid mode '{mode}'; use one of {', '.join(MODES)}")
@@ -160,58 +256,43 @@ def generate(
         raise AppPreviewError("no_targets", "No targets given; pass --target (see `apppreview targets`)")
     if isinstance(size, str):
         size = parse_size(size)
+    if template is not None and not isinstance(template, Template):
+        template = load_template(template)
+    for name, texts in (("captions", captions), ("subtitles", subtitles)):
+        if texts and len(texts) != len(inputs):
+            raise AppPreviewError(
+                "text_count_mismatch", f"{len(texts)} {name} given for {len(inputs)} images; give one per image"
+            )
+    if (captions or subtitles) and template is None:
+        template = load_template("clean")
+    if background != "auto":
+        resolve_background(background, None)  # fail fast on an invalid color
 
     for target in resolved:
-        if len(inputs) > target.count_max:
-            raise AppPreviewError(
-                "too_many_images",
-                f"{len(inputs)} images given; {target.id} allows at most {target.count_max}",
-            )
-        if fmt and fmt not in target.formats:
-            raise AppPreviewError(
-                "invalid_format", f"{target.id} does not accept {fmt}; allowed: {', '.join(target.formats)}"
-            )
-        if size and size_problems(target, *size):
-            raise AppPreviewError(
-                "invalid_size",
-                f"{size[0]}x{size[1]} is not accepted by {target.id}: {'; '.join(size_problems(target, *size))}"
-                + (f". Accepted: {format_sizes(target.sizes)}" if target.sizes else ""),
-            )
+        check_target_options(target, len(inputs), fmt, size, template is not None)
 
-    sources = []
-    for path in inputs:
-        try:
-            with Image.open(path) as img:
-                img.load()
-                sources.append((Path(path), img.copy()))
-        except FileNotFoundError:
-            raise AppPreviewError("input_not_found", f"Input not found: {path}") from None
-        except (UnidentifiedImageError, OSError) as exc:
-            raise AppPreviewError("input_unreadable", f"Cannot read image {path}: {exc}") from None
-
+    sources = [(Path(path), load_source(path)) for path in inputs]
     out_dir = Path(out_dir)
     outputs: list[Output] = []
     reports: list[Report] = []
     for target in resolved:
-        target_format = fmt or target.formats[0]
         target_outputs = []
         for index, (path, img) in enumerate(sources, start=1):
-            source_size = ImageOps.exif_transpose(img).size
-            out_size = size or choose_size(target, *source_size)
-            dest = out_dir / target.id / f"{index:02d}_{path.stem}.{_EXT[target_format]}"
-            warnings = []
-            keep_alpha = target.alpha and target_format == "png"
-            rendered, scale = render(img, out_size, mode, resolve_background(background, img), keep_alpha)
-            if scale > UPSCALE_WARNING:
-                warnings.append(f"Source is upscaled {scale:.2f}x; output may look blurry")
-            if mode == "fit" and abs(source_size[0] / source_size[1] - out_size[0] / out_size[1]) > 0.01:
-                warnings.append("Aspect ratios differ; output is letterboxed (use --mode fill to crop instead)")
-            if not dry_run:
-                dest.parent.mkdir(parents=True, exist_ok=True)
-                if target_format == "jpeg":
-                    rendered.save(dest, "JPEG", quality=92, optimize=True)
-                else:
-                    rendered.save(dest, "PNG", optimize=True)
+            target_format = fmt or target.formats[0]
+            dest = out_dir / target.id / output_name(index, path.stem, target_format)
+            out_size, target_format, scale, warnings = produce(
+                img,
+                target,
+                dest,
+                size=size,
+                fmt=fmt,
+                mode=mode,
+                background=background,
+                template=template,
+                caption=captions[index - 1] if captions else None,
+                subtitle=subtitles[index - 1] if subtitles else None,
+                dry_run=dry_run,
+            )
             output = Output(str(path), target.id, str(dest), *out_size, target_format, scale, warnings)
             outputs.append(output)
             target_outputs.append(output)
