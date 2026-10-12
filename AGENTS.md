@@ -49,6 +49,13 @@ apppreview generate shot.png -t apple.iphone-6.9 --template sunset --caption "Pl
 ```
 Pass `--caption` once per input image, in the same order.
 
+**Play feature graphic / TV banner**
+```bash
+apppreview graphic -t google.feature-graphic --title "App Name" --subtitle "Tagline" --icon icon.png --json
+```
+Or list them under `graphics:` in `apppreview.yaml`. Only targets with `"kind": "graphic"`
+in `apppreview targets --json` work here.
+
 ## Issue codes
 
 | Code | Meaning |
@@ -72,4 +79,5 @@ Fix almost all errors by running `generate` for the same target.
 Common ones: `unknown_target`, `unknown_template`, `invalid_template`, `invalid_config`,
 `config_not_found`, `input_not_found`, `missing_text` (no caption for a locale),
 `missing_source`, `template_not_allowed` (target forbids captions/backgrounds),
-`too_many_images`, `invalid_size`, `invalid_format`, `text_count_mismatch`.
+`too_many_images`, `invalid_size`, `invalid_format`, `text_count_mismatch`,
+`not_a_graphic_target`, `nothing_to_build`.

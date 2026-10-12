@@ -51,7 +51,7 @@ Exit codes: `0` success / all valid, `1` validation failures, `2` usage or input
 - ✅ Templates: background colours/gradients, captions, fonts, layout (#11).
 - Device frames, for screenshots and later videos (#12).
 - Localized captions.
-- Google feature graphic, TV banner, and icon generation/validation.
+- ✅ Google feature graphic, TV banner, and icon generation/validation (#14).
 
 ### M3 — Workflow integration
 - Output layouts for fastlane `deliver`/`supply` and Gradle Play Publisher.

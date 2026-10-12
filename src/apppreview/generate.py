@@ -222,12 +222,16 @@ def produce(
             rendered, _ = render(img, out_size, mode, resolve_background(background, img), keep_alpha)
 
     if not dry_run:
-        dest.parent.mkdir(parents=True, exist_ok=True)
-        if target_format == "jpeg":
-            rendered.save(dest, "JPEG", quality=92, optimize=True)
-        else:
-            rendered.save(dest, "PNG", optimize=True)
+        save_image(rendered, dest, target_format)
     return out_size, target_format, scale, warnings
+
+
+def save_image(img: Image.Image, dest: Path, fmt: str) -> None:
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    if fmt == "jpeg":
+        img.save(dest, "JPEG", quality=92, optimize=True)
+    else:
+        img.save(dest, "PNG", optimize=True)
 
 
 def output_name(index: int, stem: str, fmt: str) -> str:

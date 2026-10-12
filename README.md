@@ -113,6 +113,34 @@ Output goes to `out/<locale>/<target>/NN_<screen>.png`. Captions fall back from
 `de-DE` to `de` to `default`. All missing source files are reported at once, before
 anything is rendered. Run `apppreview schema config` for the JSON Schema.
 
+## Store graphics and icons
+
+Render the Google Play feature graphic (1024×500) and Android TV banner (1280×720)
+from your app name, an optional tagline, and your icon, styled by any template:
+
+```bash
+apppreview graphic -t google.feature-graphic --title "Weekly Planner" \
+  --subtitle "Plan your whole week in seconds" --icon icon.png --template sunset
+apppreview graphic -t google.tv-banner --title "Weekly Planner" --icon icon.png -o banner.png
+```
+
+![Sample feature graphic](docs/images/feature-graphic.png)
+
+Content stays inside the central 80% because Google crops feature graphics in some
+placements. In `apppreview.yaml`, add them under `graphics:` with localized text:
+
+```yaml
+graphics:
+  - target: google.feature-graphic
+    title: Weekly Planner
+    subtitle: {en: "Plan your whole week in seconds", de: "Plane deine Woche in Sekunden"}
+    icon: assets/icon.png
+    template: {extends: sunset}      # optional overrides of the config's template
+```
+
+App icons are plain resizes: `apppreview generate icon.png -t google.icon -t apple.icon`
+gives a 512×512 Play icon (transparency kept) and a 1024×1024 opaque App Store icon.
+
 ## What gets checked
 
 - Exact pixel sizes (Apple) or size, aspect-ratio rules (Google)
@@ -138,6 +166,8 @@ Apple: iPhone (Duo, 6.9", 6.5", 6.3", 6.1", 5.5", 4.7", 4", 3.5"), iPad (13", 12
 
 Google: phone, 7" and 10" tablets, Chromebook, Wear OS, Android TV, Android XR,
 Automotive, feature graphic, TV banner, app icon.
+
+Apple also has an `apple.icon` target (1024×1024, opaque PNG).
 
 Specs live in [`src/apppreview/data/`](src/apppreview/data) with their source URL and the
 date they were last verified. Run `apppreview targets --json` for the full data.
