@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import lru_cache
 from importlib import resources
 
-from PIL import Image, ImageColor, ImageDraw, ImageFilter, ImageFont, ImageOps
+from PIL import Image, ImageColor, ImageDraw, ImageFilter, ImageFont, ImageOps, features
 
 from apppreview.errors import AppPreviewError
+from apppreview.locales import is_rtl, language
 from apppreview.specs import Size
 from apppreview.template import Background, Template, TextStyle
 
@@ -70,6 +71,22 @@ def load_font(font: str | None, weight: str, size: int) -> ImageFont.FreeTypeFon
         ) from None
 
 
+HAS_RAQM = features.check("raqm")
+
+
+def layout_options(locale: str | None) -> dict:
+    """Keyword arguments for Pillow text calls: shaping language and paragraph direction.
+
+    Needs libraqm (bundled with Pillow wheels); without it, text is laid out left to right.
+    """
+    if not locale or not HAS_RAQM:
+        return {}
+    options = {"language": language(locale)}
+    if is_rtl(locale):
+        options["direction"] = "rtl"
+    return options
+
+
 @dataclass
 class TextBlock:
     lines: list[str]
@@ -77,36 +94,84 @@ class TextBlock:
     style: TextStyle
     line_height: int
     truncated: bool
+    layout: dict = field(default_factory=dict)
+    rtl: bool = False
 
     @property
     def height(self) -> int:
         return self.line_height * len(self.lines) if self.lines else 0
 
 
-def _wrap(text: str, font: ImageFont.FreeTypeFont, width: float) -> list[str]:
+def _wrap(text: str, font: ImageFont.FreeTypeFont, width: float, layout: dict) -> list[str]:
+    """Greedy word wrap. Words wider than a line (e.g. CJK text, which has no spaces)
+    are broken between characters."""
+
+    def length(s: str) -> float:
+        return font.getlength(s, **layout)
+
     lines = []
     for paragraph in text.splitlines() or [""]:
         line = ""
         for word in paragraph.split():
             candidate = f"{line} {word}".strip()
-            if not line or font.getlength(candidate) <= width:
+            if not line or length(candidate) <= width:
                 line = candidate
             else:
                 lines.append(line)
                 line = word
+            while length(line) > width and len(line) > 1:
+                cut = max(1, next((i for i in range(len(line), 0, -1) if length(line[:i]) <= width), 1))
+                lines.append(line[:cut])
+                line = line[cut:].lstrip()
         lines.append(line)
     return lines
 
 
-def fit_text(text: str, style: TextStyle, unit: int, width: float, max_height: float) -> TextBlock:
+@lru_cache(maxsize=64)
+def _notdef(font: ImageFont.FreeTypeFont) -> tuple:
+    mask = font.getmask("\U0010fffd")  # private-use code point no font defines
+    return mask.size, bytes(mask)
+
+
+def missing_glyphs(font: ImageFont.FreeTypeFont, text: str) -> list[str]:
+    """Characters in `text` that `font` would draw as the 'missing glyph' box."""
+    notdef = _notdef(font)
+    missing = []
+    for ch in dict.fromkeys(text):
+        if ch.isspace() or ch == "…":
+            continue
+        mask = font.getmask(ch)
+        if (mask.size, bytes(mask)) == notdef:
+            missing.append(ch)
+    return missing
+
+
+def text_warnings(blocks: list[TextBlock]) -> list[str]:
+    warnings = []
+    if any(b.truncated for b in blocks):
+        warnings.append("Text did not fit at the minimum size and was truncated; shorten it")
+    missing = list(dict.fromkeys(ch for b in blocks for ch in missing_glyphs(b.font, "".join(b.lines))))
+    if missing:
+        sample = "".join(missing[:8])
+        warnings.append(
+            f"The font has no glyphs for {len(missing)} character(s) ({sample}); they render as boxes. "
+            "Set a font that covers this language, e.g. with locale_overrides in apppreview.yaml"
+        )
+    return warnings
+
+
+def fit_text(
+    text: str, style: TextStyle, unit: int, width: float, max_height: float, locale: str | None = None
+) -> TextBlock:
     """Wrap `text`, shrinking from style.size towards style.min_size until it fits."""
+    layout = layout_options(locale)
     size = style.size * unit
     floor = min(style.min_size, style.size) * unit
     while True:
         font = load_font(style.font, style.weight, max(1, round(size)))
         line_height = round(size * style.line_spacing)
-        lines = _wrap(text, font, width)
-        too_wide = any(font.getlength(line) > width for line in lines)
+        lines = _wrap(text, font, width, layout)
+        too_wide = any(font.getlength(line, **layout) > width for line in lines)
         fits = len(lines) <= style.max_lines and line_height * len(lines) <= max_height and not too_wide
         if fits or size <= floor:
             break
@@ -116,7 +181,7 @@ def fit_text(text: str, style: TextStyle, unit: int, width: float, max_height: f
     if len(lines) > style.max_lines:
         lines = lines[: style.max_lines]
         lines[-1] = lines[-1].rstrip() + "…"
-    return TextBlock(lines, font, style, line_height, truncated)
+    return TextBlock(lines, font, style, line_height, truncated, layout, is_rtl(locale))
 
 
 def _draw_text(canvas: Image.Image, block: TextBlock, left: float, top: float, width: float) -> None:
@@ -125,12 +190,13 @@ def _draw_text(canvas: Image.Image, block: TextBlock, left: float, top: float, w
     # Center each line's glyphs vertically within its line box.
     ascent, descent = block.font.getmetrics()
     offset = (block.line_height - (ascent + descent)) / 2
+    align = block.style.align
+    if block.rtl:  # mirror the template's alignment for right-to-left scripts
+        align = {"left": "right", "right": "left"}.get(align, align)
     for i, line in enumerate(block.lines):
-        line_width = block.font.getlength(line)
-        x = {"left": left, "center": left + (width - line_width) / 2, "right": left + width - line_width}[
-            block.style.align
-        ]
-        draw.text((x, top + i * block.line_height + offset), line, font=block.font, fill=color)
+        line_width = block.font.getlength(line, **block.layout)
+        x = {"left": left, "center": left + (width - line_width) / 2, "right": left + width - line_width}[align]
+        draw.text((x, top + i * block.line_height + offset), line, font=block.font, fill=color, **block.layout)
 
 
 def _rounded_mask(size: Size, radius: int) -> Image.Image:
@@ -145,6 +211,7 @@ def compose(
     template: Template,
     caption: str | None = None,
     subtitle: str | None = None,
+    locale: str | None = None,
 ) -> tuple[Image.Image, float, list[str]]:
     """Return an RGB image of `size`, the scale applied to the screenshot, and warnings."""
     warnings: list[str] = []
@@ -158,13 +225,11 @@ def compose(
     budget = TEXT_BUDGET * h
     blocks = []
     if caption:
-        blocks.append(fit_text(caption, template.caption, unit, text_width, budget))
+        blocks.append(fit_text(caption, template.caption, unit, text_width, budget, locale))
         budget -= blocks[-1].height
     if subtitle:
-        blocks.append(fit_text(subtitle, template.subtitle, unit, text_width, max(budget, 0)))
-    for block in blocks:
-        if block.truncated:
-            warnings.append("Text did not fit at the minimum size and was truncated; shorten it")
+        blocks.append(fit_text(subtitle, template.subtitle, unit, text_width, max(budget, 0), locale))
+    warnings.extend(text_warnings(blocks))
     line_gap = round(0.3 * blocks[0].line_height) if len(blocks) == 2 else 0
     text_height = sum(b.height for b in blocks) + line_gap
 

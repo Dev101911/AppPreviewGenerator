@@ -22,11 +22,13 @@ from apppreview.generate import (
     save_image,
 )
 from apppreview.graphic import check_graphic_target, graphic_name, render_graphic
+from apppreview.locales import language, store_locale
 from apppreview.specs import get_target
 from apppreview.template import Template, load_template
 from apppreview.validate import Report, validate_images
 
 DEFAULT_CONFIG = "apppreview.yaml"
+STORE_NAMES = {"apple": "App Store", "google": "Google Play"}
 
 LocalizedText = str | dict[str, str]
 
@@ -71,6 +73,13 @@ class Config(BaseModel):
     mode: Literal["fit", "fill", "stretch"] = Field("fit", description="Resize mode when no template is used")
     background: str = Field("#ffffff", description="Letterbox color when no template is used, or 'auto'")
     format: Literal["png", "jpeg"] | None = None
+    locale_overrides: dict[str, str | dict] = Field(
+        default_factory=dict,
+        description=(
+            "Template overrides per locale or language, e.g. {ja: {caption: {font: fonts/NotoSansJP-Bold.otf}}}. "
+            "Use it to pick fonts that cover CJK, Arabic, Hebrew, Thai, Devanagari, etc."
+        ),
+    )
     screens: list[Screen] = Field(default_factory=list)
     graphics: list[Graphic] = Field(default_factory=list, description="Feature graphic, TV banner, ...")
 
@@ -151,6 +160,7 @@ class BuildResult:
     reports: list[tuple[str | None, Report]]
     dry_run: bool
     out_dir: str
+    warnings: list[str]
 
     @property
     def ok(self) -> bool:
@@ -163,11 +173,25 @@ class BuildResult:
             "out_dir": self.out_dir,
             "outputs": [o.to_dict() for o in self.outputs],
             "validation": [{**r.to_dict(), "locale": locale} for locale, r in self.reports],
+            "warnings": self.warnings,
         }
 
 
-def plan(config: Config, base_dir: Path, only_targets=(), only_locales=()) -> list[Job]:
-    """Resolve every output to produce, failing fast on any config problem."""
+def locale_warnings(config: Config, stores: set[str]) -> list[str]:
+    warnings = []
+    for locale in config.locales:
+        for store in sorted(stores):
+            if store_locale(store, locale) is None:
+                warnings.append(
+                    f"Locale '{locale}' is not a {STORE_NAMES[store]} locale; see `apppreview locales --store {store}`"
+                )
+    return warnings
+
+
+def plan(config: Config, base_dir: Path, only_targets=(), only_locales=()) -> tuple[list[Job], list[str]]:
+    """Resolve every output to produce, failing fast on any config problem.
+
+    Returns the jobs and any warnings about the config."""
     targets = [get_target(t) for t in config.targets if not only_targets or t in only_targets]
     graphics = [g for g in config.graphics if not only_targets or g.target in only_targets]
     locales = [loc for loc in config.locales if not only_locales or loc in only_locales] or (
@@ -186,6 +210,20 @@ def plan(config: Config, base_dir: Path, only_targets=(), only_locales=()) -> li
         s.id: load_template(base_template or "clean", s.template, base_dir) if s.template else base_template
         for s in config.screens
     }
+
+    localized_templates: dict[tuple[int, str | None], Template | None] = {}
+
+    def for_locale(template: Template | None, locale: str | None) -> Template | None:
+        """Apply locale_overrides (exact locale first, then language) on top of `template`."""
+        if template is None or not locale:
+            return template
+        override = config.locale_overrides.get(locale) or config.locale_overrides.get(language(locale))
+        if not override:
+            return template
+        key = (id(template), locale)
+        if key not in localized_templates:
+            localized_templates[key] = load_template(template, override, base_dir)
+        return localized_templates[key]
 
     ids = [s.id for s in config.screens]
     if len(set(ids)) != len(ids):
@@ -216,7 +254,7 @@ def plan(config: Config, base_dir: Path, only_targets=(), only_locales=()) -> li
                         locale=locale,
                         source=source,
                         dest=folder / output_name(index, screen.id, fmt),
-                        template=screen_templates[screen.id],
+                        template=for_locale(screen_templates[screen.id], locale),
                         caption=localized(screen.caption, locale, f"{what} caption"),
                         subtitle=localized(screen.subtitle, locale, f"{what} subtitle"),
                     )
@@ -242,7 +280,7 @@ def plan(config: Config, base_dir: Path, only_targets=(), only_locales=()) -> li
                     locale=locale,
                     source=icon,
                     dest=folder / name,
-                    template=template,
+                    template=for_locale(template, locale),
                     caption=localized(g.title, locale, f"{what} title"),
                     subtitle=localized(g.subtitle, locale, f"{what} subtitle"),
                 )
@@ -250,7 +288,8 @@ def plan(config: Config, base_dir: Path, only_targets=(), only_locales=()) -> li
     if missing:
         listed = "\n".join(f"  {m}" for m in sorted(set(missing)))
         raise AppPreviewError("input_not_found", f"{len(set(missing))} source image(s) not found:\n{listed}")
-    return jobs
+    stores = {t.store for t in targets} | {get_target(g.target).store for g in graphics}
+    return jobs, locale_warnings(config, stores)
 
 
 def build(
@@ -260,7 +299,7 @@ def build(
     dry_run: bool = False,
 ) -> BuildResult:
     config, base_dir = load_config(config_path)
-    jobs = plan(config, base_dir, only_targets, only_locales)
+    jobs, config_warnings = plan(config, base_dir, only_targets, only_locales)
 
     cache: dict[Path, object] = {}
     outputs: list[Output] = []
@@ -273,7 +312,9 @@ def build(
             fmt = config.format or target.formats[0]
             out_size, scale, warnings = target.sizes[0], None, []
             if not dry_run:
-                img, warnings = render_graphic(out_size, job.template, job.caption, job.subtitle, cache.get(job.source))
+                img, warnings = render_graphic(
+                    out_size, job.template, job.caption, job.subtitle, cache.get(job.source), job.locale
+                )
                 save_image(img, job.dest, fmt)
         else:
             out_size, fmt, scale, warnings = produce(
@@ -287,6 +328,7 @@ def build(
                 caption=job.caption,
                 subtitle=job.subtitle,
                 dry_run=dry_run,
+                locale=job.locale,
             )
         output = Output(
             str(job.source or ""), target.id, str(job.dest), *out_size, fmt, scale, warnings, job.locale, job.name
@@ -298,7 +340,7 @@ def build(
     if not dry_run:
         for (locale, target_id), group in groups.items():
             reports.append((locale, validate_images([o.path for o in group], target_id)))
-    return BuildResult(outputs, reports, dry_run, str(base_dir / config.out))
+    return BuildResult(outputs, reports, dry_run, str(base_dir / config.out), config_warnings)
 
 
 STARTER_CONFIG = """\

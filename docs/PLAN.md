@@ -50,7 +50,7 @@ Exit codes: `0` success / all valid, `1` validation failures, `2` usage or input
 - ✅ Declarative config file (`apppreview.yaml`) for batch runs across targets and locales (#10).
 - ✅ Templates: background colours/gradients, captions, fonts, layout (#11).
 - Device frames, for screenshots and later videos (#12).
-- Localized captions.
+- ✅ Localization: per-locale fonts, RTL and CJK layout, store locale codes (#13).
 - ✅ Google feature graphic, TV banner, and icon generation/validation (#14).
 
 ### M3 — Workflow integration

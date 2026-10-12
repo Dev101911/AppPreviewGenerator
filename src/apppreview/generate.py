@@ -197,6 +197,7 @@ def produce(
     caption: str | None = None,
     subtitle: str | None = None,
     dry_run: bool = False,
+    locale: str | None = None,
 ) -> tuple[Size, str, float | None, list[str]]:
     """Render one image for one target and save it to `dest` (with the right extension).
 
@@ -210,7 +211,7 @@ def produce(
     if template:
         scale = None
         if not dry_run:
-            rendered, scale, warnings = compose(img, out_size, template, caption, subtitle)
+            rendered, scale, warnings = compose(img, out_size, template, caption, subtitle, locale)
     else:
         scale = _plain_scale(source_size, out_size, mode)
         if scale > UPSCALE_WARNING:
@@ -250,6 +251,7 @@ def generate(
     template: str | Template | None = None,
     captions: list[str] | None = None,
     subtitles: list[str] | None = None,
+    locale: str | None = None,
 ) -> GenerateResult:
     if mode not in MODES:
         raise AppPreviewError("invalid_mode", f"Invalid mode '{mode}'; use one of {', '.join(MODES)}")
@@ -296,6 +298,7 @@ def generate(
                 caption=captions[index - 1] if captions else None,
                 subtitle=subtitles[index - 1] if subtitles else None,
                 dry_run=dry_run,
+                locale=locale,
             )
             output = Output(str(path), target.id, str(dest), *out_size, target_format, scale, warnings)
             outputs.append(output)
