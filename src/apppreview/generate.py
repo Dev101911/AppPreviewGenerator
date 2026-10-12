@@ -147,7 +147,9 @@ def render(
     return flat, scale
 
 
-def check_target_options(target: Target, count: int, fmt: str | None, size: Size | None, templated: bool) -> None:
+def check_target_options(
+    target: Target, count: int, fmt: str | None, size: Size | None, templated: bool, framed: bool = False
+) -> None:
     """Raise AppPreviewError if the requested options can never produce compliant output."""
     if count > target.count_max:
         raise AppPreviewError("too_many_images", f"{count} images given; {target.id} allows at most {target.count_max}")
@@ -161,6 +163,8 @@ def check_target_options(target: Target, count: int, fmt: str | None, size: Size
             f"{size[0]}x{size[1]} is not accepted by {target.id}: {'; '.join(size_problems(target, *size))}"
             + (f". Accepted: {format_sizes(target.sizes)}" if target.sizes else ""),
         )
+    if framed and not target.frames_allowed:
+        raise AppPreviewError("frame_not_allowed", f"{target.id} screenshots must not be shown inside device frames")
     if templated and not target.templates_allowed:
         raise AppPreviewError(
             "template_not_allowed",
@@ -252,6 +256,7 @@ def generate(
     captions: list[str] | None = None,
     subtitles: list[str] | None = None,
     locale: str | None = None,
+    frame: str | None = None,
 ) -> GenerateResult:
     if mode not in MODES:
         raise AppPreviewError("invalid_mode", f"Invalid mode '{mode}'; use one of {', '.join(MODES)}")
@@ -269,13 +274,17 @@ def generate(
             raise AppPreviewError(
                 "text_count_mismatch", f"{len(texts)} {name} given for {len(inputs)} images; give one per image"
             )
-    if (captions or subtitles) and template is None:
+    if (captions or subtitles or frame) and template is None:
         template = load_template("clean")
+    if frame:
+        template = load_template(template, {"screenshot": {"frame": frame}})
     if background != "auto":
         resolve_background(background, None)  # fail fast on an invalid color
 
     for target in resolved:
-        check_target_options(target, len(inputs), fmt, size, template is not None)
+        check_target_options(
+            target, len(inputs), fmt, size, template is not None, bool(template and template.screenshot.frame)
+        )
 
     sources = [(Path(path), load_source(path)) for path in inputs]
     out_dir = Path(out_dir)
