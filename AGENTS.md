@@ -53,7 +53,13 @@ Pass `--caption` once per input image, in the same order.
 ```bash
 apppreview graphic -t google.feature-graphic --title "App Name" --subtitle "Tagline" --icon icon.png --json
 ```
-Or list them under `graphics:` in `apppreview.yaml`. Only targets with `"kind": "graphic"`
+Or list them under `graphics:` in `apppreview.yaml`.
+
+**Non-Latin languages**
+Check `outputs[].warnings` for "no glyphs": the font can't draw that text. Fix it by
+adding `locale_overrides: {<lang>: {caption: {font: <path>}, subtitle: {font: <path>}}}`
+to the config. `build` also returns `warnings[]` for locales a store doesn't support;
+`apppreview locales <code> --json` maps a locale to each store's code. Only targets with `"kind": "graphic"`
 in `apppreview targets --json` work here.
 
 ## Issue codes

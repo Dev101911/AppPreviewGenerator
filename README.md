@@ -113,6 +113,29 @@ Output goes to `out/<locale>/<target>/NN_<screen>.png`. Captions fall back from
 `de-DE` to `de` to `default`. All missing source files are reported at once, before
 anything is rendered. Run `apppreview schema config` for the JSON Schema.
 
+## Localization
+
+- **Captions per locale.** Captions and titles take a mapping of locale to text. A missing
+  locale falls back to its language, then to `default`.
+- **Fonts per locale.** The bundled Inter font covers Latin, Greek and Cyrillic. For other
+  scripts, set a font in `locale_overrides`; any template setting can be overridden by
+  locale or language:
+
+  ```yaml
+  locale_overrides:
+    ja: {caption: {font: fonts/NotoSansJP-Bold.otf}, subtitle: {font: fonts/NotoSansJP-Regular.otf}}
+    ar: {caption: {font: fonts/NotoSansArabic-Bold.ttf}}
+  ```
+
+  [Noto](https://fonts.google.com/noto) fonts cover almost every language. If a caption has
+  characters the font can't draw, the output gets a warning instead of silently showing boxes.
+- **Right-to-left and complex scripts.** Arabic, Hebrew, Persian and Urdu are shaped and
+  laid out right to left, with the template's left/right alignment mirrored (needs libraqm,
+  which Pillow's wheels bundle). CJK text, which has no spaces, wraps between characters.
+- **Store locale codes.** The stores spell locales differently (`ja` vs `ja-JP`, `he` vs
+  `iw-IL`, `zh-Hans` vs `zh-CN`). `build` warns about locales a store doesn't support, and
+  `apppreview locales ja-JP` shows each store's code. One-off commands take `--locale`.
+
 ## Store graphics and icons
 
 Render the Google Play feature graphic (1024×500) and Android TV banner (1280×720)

@@ -17,6 +17,7 @@ from apppreview.config import DEFAULT_CONFIG, STARTER_CONFIG, build, config_sche
 from apppreview.errors import AppPreviewError
 from apppreview.generate import MODES, generate
 from apppreview.graphic import generate_graphic
+from apppreview.locales import is_rtl, store_locale, store_locales
 from apppreview.specs import STORES, format_sizes, get_target, load_targets
 from apppreview.template import builtin_templates
 from apppreview.validate import ERROR, identify, validate_images
@@ -166,9 +167,10 @@ def _badge(severity: str) -> str:
 @click.option("--template", help="Template name (see `apppreview templates`) or template .yaml path.")
 @click.option("--caption", "captions", multiple=True, help="Caption per image, in order. Implies a template.")
 @click.option("--subtitle", "subtitles", multiple=True, help="Subtitle per image, in order.")
+@click.option("--locale", help="Language of the captions (e.g. ar, ja-JP), for text direction and shaping.")
 @json_option
 def generate_cmd(
-    images, target_ids, out_dir, mode, background, fmt, size, dry_run, template, captions, subtitles, as_json
+    images, target_ids, out_dir, mode, background, fmt, size, dry_run, template, captions, subtitles, locale, as_json
 ):
     """Resize IMAGES into compliant screenshots for one or more targets.
 
@@ -188,6 +190,7 @@ def generate_cmd(
             template=template,
             captions=list(captions) or None,
             subtitles=list(subtitles) or None,
+            locale=locale,
         )
     except AppPreviewError as exc:
         fail(exc, as_json)
@@ -208,6 +211,8 @@ def _report_outputs(result, dry_run: bool, as_json: bool):
             label = f"{locale}/{report.target.id}" if locale else report.target.id
             for issue in report.all_issues:
                 click.echo(f"{_badge(issue.severity)} {label}: {issue.message}")
+        for warning in getattr(result, "warnings", []):
+            click.echo(f"warn:  {warning}")
         if not dry_run:
             click.echo("\nAll outputs are compliant." if result.ok else "\nSome outputs failed validation.")
     sys.exit(EXIT_OK if result.ok else EXIT_INVALID)
@@ -222,11 +227,12 @@ def _report_outputs(result, dry_run: bool, as_json: bool):
 @click.option("-o", "--out", default="apppreview-out", show_default=True, help="Output file or directory.")
 @click.option("--format", "fmt", type=click.Choice(["png", "jpeg"]), help="Output format [default: png].")
 @click.option("--dry-run", is_flag=True, help="Report what would be written without writing files.")
+@click.option("--locale", help="Language of the text (e.g. ar, ja-JP), for text direction and shaping.")
 @json_option
-def graphic_cmd(target_id, title, subtitle, icon, template, out, fmt, dry_run, as_json):
+def graphic_cmd(target_id, title, subtitle, icon, template, out, fmt, dry_run, locale, as_json):
     """Render a store graphic (feature graphic, TV banner) from a title and app icon."""
     try:
-        result = generate_graphic(target_id, title, subtitle, icon, template, out, fmt, dry_run)
+        result = generate_graphic(target_id, title, subtitle, icon, template, out, fmt, dry_run, locale)
     except AppPreviewError as exc:
         fail(exc, as_json)
     _report_outputs(result, dry_run, as_json)
@@ -280,6 +286,31 @@ def templates_cmd(name, as_json):
         return
     for t in templates.values():
         click.echo(f"{t.name:<10} {t.description}")
+
+
+@main.command(name="locales")
+@click.argument("locale", required=False)
+@click.option("--store", type=click.Choice(STORES), help="Only list one store's locale codes.")
+@json_option
+def locales_cmd(locale, store, as_json):
+    """List store locale codes, or show how LOCALE maps to each store's code."""
+    stores = [store] if store else list(STORES)
+    if locale:
+        mapping = {s: store_locale(s, locale) for s in stores}
+        if as_json:
+            emit_json({"locale": locale, "stores": mapping, "rtl": is_rtl(locale)})
+            return
+        for s, code in mapping.items():
+            click.echo(f"{s:<7} {code or 'not supported'}")
+        return
+    data = {s: store_locales()[s] for s in stores}
+    if as_json:
+        emit_json(data)
+        return
+    for s, codes in data.items():
+        click.echo(f"{s} ({len(codes)} locales)")
+        for code, name in codes.items():
+            click.echo(f"  {code:<8} {name}")
 
 
 @main.command(name="schema")
