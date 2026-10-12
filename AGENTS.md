@@ -31,7 +31,23 @@ apppreview validate out/apple.iphone-6.9/*.png -t apple.iphone-6.9 --json
 Each entry in `files[].issues` and `set_issues` has a `severity` (`error`/`warning`),
 a stable `code`, a `message`, and often a `fix`.
 
-**Plan without writing files**: add `--dry-run` to `generate`.
+**Plan without writing files**: add `--dry-run` to `generate` or `build`.
+
+**Captioned marketing screenshots for a whole listing**
+1. `apppreview schema config` gives the JSON Schema for `apppreview.yaml`
+   (`apppreview schema template` for templates).
+2. Write `apppreview.yaml` (or start with `apppreview init`), with one entry in `screens`
+   per screenshot and captions keyed by locale.
+3. `apppreview build --dry-run --json` validates the config and lists every output. All
+   missing sources are reported in a single `input_not_found` error.
+4. `apppreview build --json` renders and validates. `validation[]` has one report per
+   locale × target.
+
+**One-off captioned screenshot**
+```bash
+apppreview generate shot.png -t apple.iphone-6.9 --template sunset --caption "Plan your week" --json
+```
+Pass `--caption` once per input image, in the same order.
 
 ## Issue codes
 
@@ -50,3 +66,10 @@ a stable `code`, a `message`, and often a `fix`.
 | `recommended_*` | Google Play promotion recommendations (warning) |
 
 Fix almost all errors by running `generate` for the same target.
+
+## Usage error codes (exit 2)
+
+Common ones: `unknown_target`, `unknown_template`, `invalid_template`, `invalid_config`,
+`config_not_found`, `input_not_found`, `missing_text` (no caption for a locale),
+`missing_source`, `template_not_allowed` (target forbids captions/backgrounds),
+`too_many_images`, `invalid_size`, `invalid_format`, `text_count_mismatch`.

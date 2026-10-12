@@ -10,6 +10,7 @@ AI agent to drive as for a developer.
 |---|---|---|
 | Language | **Python ≥ 3.10** | Pillow is the most mature image stack; `pipx`/`uvx` give one-line installs; easy to wrap as an MCP server later. |
 | CLI framework | `click` | Stable, composable, good help output. |
+| Config & templates | YAML validated with `pydantic` | Strict, clear errors, and free JSON Schemas for agents. |
 | Imaging | `Pillow` | Resize/crop/pad, alpha flattening, PNG/JPEG encoding, text rendering for later template work. |
 | Store specs | Versioned JSON data files (`src/apppreview/data/*.json`) with source URLs and a `verified` date | Specs change (e.g. new iPhone sizes); updating data should not require code changes. |
 | Output for machines | Every command supports `--json`; stable exit codes | Lets agents and CI parse results without scraping text. |
@@ -37,7 +38,7 @@ Exit codes: `0` success / all valid, `1` validation failures, `2` usage or input
 
 ## Milestones
 
-### M1 — MVP
+### M1 — MVP ✅ (PR #20)
 1. Project scaffolding: packaging, CLI skeleton, lint, tests, CI.
 2. Store spec registry (Apple + Google), with source + verified date.
 3. `targets` command.
@@ -46,9 +47,9 @@ Exit codes: `0` success / all valid, `1` validation failures, `2` usage or input
 6. Agent-friendly UX: `--json` everywhere, exit codes, `AGENTS.md`.
 
 ### M2 — Marketing-quality output
-- Declarative config file (`apppreview.yaml`) for batch runs across targets and locales.
-- Templates: background colours/gradients, captions, fonts, layout.
-- Device frames.
+- ✅ Declarative config file (`apppreview.yaml`) for batch runs across targets and locales (#10).
+- ✅ Templates: background colours/gradients, captions, fonts, layout (#11).
+- Device frames, for screenshots and later videos (#12).
 - Localized captions.
 - Google feature graphic, TV banner, and icon generation/validation.
 
@@ -56,6 +57,7 @@ Exit codes: `0` success / all valid, `1` validation failures, `2` usage or input
 - Output layouts for fastlane `deliver`/`supply` and Gradle Play Publisher.
 - Capture from iOS Simulator (`xcrun simctl`) and Android emulator (`adb`).
 - MCP server so AI agents can call targets/validate/generate as tools.
+- App preview videos (#21).
 - Distribution: PyPI, `pipx`/`uvx`, Homebrew; GitHub Action.
 - Spec freshness process (scheduled check against store docs).
 

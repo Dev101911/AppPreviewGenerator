@@ -41,6 +41,7 @@ class Target:
     max_bytes: int | None = None
     uniform_size: bool = False
     frames_allowed: bool = True
+    templates_allowed: bool = True  # captions/backgrounds may be added
     required: str | None = None
     fallback: str | None = None
     notes: tuple[str, ...] = ()
@@ -128,6 +129,7 @@ def _build_target(raw: dict, defaults: dict, store: dict) -> Target:
         max_bytes=spec.get("max_bytes"),
         uniform_size=spec.get("uniform_size", False),
         frames_allowed=spec.get("frames_allowed", True),
+        templates_allowed=spec.get("templates_allowed", True),
         required=spec.get("required"),
         fallback=spec.get("fallback"),
         notes=tuple(spec.get("notes", ())),

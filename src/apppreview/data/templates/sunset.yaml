@@ -1,0 +1,8 @@
+name: sunset
+description: Vibrant orange-to-pink diagonal gradient with white caption.
+background:
+  gradient: {from: "#FB923C", to: "#DB2777", angle: 135}
+caption: {color: "#FFFFFF"}
+subtitle: {color: "#FFF1F2"}
+screenshot:
+  shadow: {color: "#4C051966", blur: 0.03, offset: 0.015}

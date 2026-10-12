@@ -1,0 +1,9 @@
+name: minimal
+description: Plain white background, caption below the screenshot, no shadow.
+background: {color: "#FFFFFF"}
+caption_position: bottom
+caption: {color: "#111111", size: 0.065}
+subtitle: {color: "#6B7280"}
+screenshot:
+  shadow: null
+  border: "#E5E7EB"

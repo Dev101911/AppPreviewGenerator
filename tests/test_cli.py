@@ -56,3 +56,34 @@ def test_generate_usage_error_json(make_image, tmp_path):
 def test_identify(make_image):
     data = json.loads(run("identify", make_image(), "--json").output)
     assert "apple.iphone-6.9" in next(iter(data["matches"].values()))
+
+
+def test_generate_with_caption(make_image, tmp_path):
+    out = tmp_path / "out"
+    result = run(
+        "generate", make_image(), "-t", "apple.iphone-6.9", "-o", out, "--template", "dark", "--caption", "Hi", "--json"
+    )
+    assert result.exit_code == 0, result.output
+    assert json.loads(result.output)["ok"] is True
+
+
+def test_caption_count_mismatch(make_image):
+    result = run("generate", make_image(), "-t", "apple.iphone-6.9", "--caption", "a", "--caption", "b", "--json")
+    assert result.exit_code == 2
+    assert json.loads(result.output)["error"]["code"] == "text_count_mismatch"
+
+
+def test_init_and_build(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    assert run("init").exit_code == 0
+    assert run("init").exit_code == 2  # refuses to overwrite
+    result = run("build", "--json")
+    assert result.exit_code == 2
+    assert json.loads(result.output)["error"]["code"] == "input_not_found"
+
+
+def test_templates_and_schema():
+    names = [t["name"] for t in json.loads(run("templates", "--json").output)]
+    assert "clean" in names
+    assert "background" in run("templates", "dark").output
+    assert "properties" in json.loads(run("schema", "template").output)

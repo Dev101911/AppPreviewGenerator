@@ -31,6 +31,9 @@ apppreview generate shots/*.png \
 
 # Which targets does an image already fit?
 apppreview identify shot.png
+
+# Styled marketing screenshot with a caption
+apppreview generate shot.png -t apple.iphone-6.9 --template dark --caption "Plan your week"
 ```
 
 `generate` writes `OUT/<target-id>/NN_<name>.png` and re-validates every file it writes.
@@ -44,6 +47,71 @@ apppreview identify shot.png
 | `--format` | `png` (default) or `jpeg` |
 | `--size WxH` | Force a specific accepted size, e.g. `1290x2796` |
 | `--dry-run` | Show what would be written |
+| `--template` | Place screenshots on a styled template (see below) |
+| `--caption`, `--subtitle` | Text per image, in input order (implies the `clean` template) |
+
+## Templates
+
+![Built-in templates: clean, dark, sunset, minimal](docs/images/templates.png)
+
+Templates put your screenshot on a styled canvas with a caption and optional subtitle.
+All sizes are proportional to the canvas, so one template works for every device and
+orientation. Captions shrink to fit and wrap automatically.
+
+```bash
+apppreview templates            # built-in: clean, dark, sunset, minimal
+apppreview templates dark       # show every setting
+apppreview schema template      # JSON Schema for writing your own
+```
+
+Write your own template as YAML, starting from a built-in one:
+
+```yaml
+# brand.yaml
+extends: dark
+background:
+  gradient: {from: "#4F46E5", to: "#0EA5E9", angle: 135}   # or {color: ...} or {image: bg.png}
+caption: {color: "#FFFFFF", font: fonts/Brand-Bold.ttf, size: 0.08}
+subtitle: {color: "#E0E7FF"}
+caption_position: top            # or bottom
+screenshot: {max_width: 0.8, corner_radius: 0.05, shadow: {blur: 0.03}}
+```
+
+The bundled default font is [Inter](https://github.com/rsms/inter) (SIL Open Font License).
+Templates are rejected for targets where stores forbid added text or backgrounds
+(Wear OS, Android Automotive, the Play app icon).
+
+## Project config: `apppreview build`
+
+For a full store listing, describe every screen, target and locale in `apppreview.yaml`:
+
+```bash
+apppreview init        # writes a commented starter apppreview.yaml
+apppreview build       # renders everything, then validates each set
+apppreview build -t apple.iphone-6.9 -l de-DE --dry-run
+```
+
+```yaml
+version: 1
+out: store-screenshots
+targets: [apple.iphone-6.9, apple.ipad-13, google.phone]
+locales: [en-US, de-DE]
+template: clean                     # name, path, or inline {extends: ..., ...}
+screens:
+  - id: home
+    source: shots/{locale}/home.png  # {locale}, {target}, {screen} are substituted
+    caption: {en: "Plan your week", de: "Plane deine Woche"}
+  - id: detail
+    source:                          # per-target sources; globs allowed
+      apple.ipad-*: shots/{locale}/ipad/detail.png
+      default: shots/{locale}/detail.png
+    caption: {default: "Every detail, one tap away"}
+    template: {caption_position: bottom}   # per-screen overrides
+```
+
+Output goes to `out/<locale>/<target>/NN_<screen>.png`. Captions fall back from
+`de-DE` to `de` to `default`. All missing source files are reported at once, before
+anything is rendered. Run `apppreview schema config` for the JSON Schema.
 
 ## What gets checked
 
