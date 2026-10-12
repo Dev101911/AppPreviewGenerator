@@ -14,7 +14,7 @@ from typing import Annotated, Literal
 
 import yaml
 from PIL import ImageColor
-from pydantic import AfterValidator, BaseModel, ConfigDict, Field, ValidationError, model_validator
+from pydantic import AfterValidator, BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from apppreview.errors import AppPreviewError
 
@@ -78,12 +78,27 @@ class Shadow(_Model):
     offset: float = Field(0.012, ge=-0.2, le=0.2, description="Vertical offset")
 
 
+class Frame(_Model):
+    name: str = Field(
+        "auto",
+        description="Built-in frame (auto, phone, tablet) or a path to a frame .png (transparent screen) or manifest",
+    )
+    color: Color = Field("#1C1C1E", description="Body color of built-in frames")
+    island: bool = Field(True, description="Draw a Dynamic Island-style cutout on the built-in phone frame")
+
+
 class ScreenshotStyle(_Model):
     max_width: float = Field(0.84, gt=0, le=1, description="Max screenshot width as a fraction of canvas width")
     corner_radius: float = Field(0.045, ge=0, le=0.5, description="Fraction of the shorter canvas side")
     shadow: Shadow | None = Field(default_factory=Shadow)
     border: Color | None = Field(None, description="Optional 1-unit border color around the screenshot")
     border_width: float = Field(0.006, ge=0, le=0.05)
+    frame: Frame | None = Field(None, description="Wrap the screenshot in a device frame; a name is shorthand")
+
+    @field_validator("frame", mode="before")
+    @classmethod
+    def _frame_shorthand(cls, value):
+        return {"name": value} if isinstance(value, str) else value
 
 
 class Template(_Model):
@@ -152,6 +167,15 @@ def _absolutize(data: dict, base_dir: Path) -> dict:
     if isinstance(background, dict) and isinstance(background.get("image"), str):
         if not Path(background["image"]).is_absolute():
             background["image"] = str(base_dir / background["image"])
+    screenshot = data.get("screenshot")
+    if isinstance(screenshot, dict):
+        frame = screenshot.get("frame")
+        name = frame.get("name") if isinstance(frame, dict) else frame
+        if isinstance(name, str) and (base_dir / name).is_file():
+            if isinstance(frame, dict):
+                frame["name"] = str(base_dir / name)
+            else:
+                screenshot["frame"] = str(base_dir / name)
     for key in ("caption", "subtitle"):
         style = data.get(key)
         # A bare font name may be an installed font, so only rewrite paths that exist here.

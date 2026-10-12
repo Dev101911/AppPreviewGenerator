@@ -48,6 +48,7 @@ a stable `code`, a `message`, and often a `fix`.
 apppreview generate shot.png -t apple.iphone-6.9 --template sunset --caption "Plan your week" --json
 ```
 Pass `--caption` once per input image, in the same order.
+Add `--frame auto` (or `phone`, `tablet`, a frame `.png`) to show the screenshot inside a device; `apppreview frames --json` lists built-ins.
 
 **Play feature graphic / TV banner**
 ```bash
@@ -86,4 +87,5 @@ Common ones: `unknown_target`, `unknown_template`, `invalid_template`, `invalid_
 `config_not_found`, `input_not_found`, `missing_text` (no caption for a locale),
 `missing_source`, `template_not_allowed` (target forbids captions/backgrounds),
 `too_many_images`, `invalid_size`, `invalid_format`, `text_count_mismatch`,
-`not_a_graphic_target`, `nothing_to_build`.
+`not_a_graphic_target`, `nothing_to_build`, `unknown_frame`, `invalid_frame`, `frame_not_found`,
+`frame_not_allowed`.

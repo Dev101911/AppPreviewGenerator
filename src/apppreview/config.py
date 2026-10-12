@@ -232,7 +232,14 @@ def plan(config: Config, base_dir: Path, only_targets=(), only_locales=()) -> tu
     jobs, missing = [], []
     out_root = base_dir / config.out
     for target in targets:
-        check_target_options(target, len(config.screens), config.format, None, any(screen_templates.values()))
+        check_target_options(
+            target,
+            len(config.screens),
+            config.format,
+            None,
+            any(screen_templates.values()),
+            any(t and t.screenshot.frame for t in screen_templates.values()),
+        )
         fmt = config.format or target.formats[0]
         for locale in locales:
             folder = out_root / locale / target.id if locale else out_root / target.id

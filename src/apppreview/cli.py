@@ -15,6 +15,7 @@ import yaml
 from apppreview import __version__
 from apppreview.config import DEFAULT_CONFIG, STARTER_CONFIG, build, config_schema, template_schema
 from apppreview.errors import AppPreviewError
+from apppreview.frames import BUILTIN_FRAMES
 from apppreview.generate import MODES, generate
 from apppreview.graphic import generate_graphic
 from apppreview.locales import is_rtl, store_locale, store_locales
@@ -168,9 +169,23 @@ def _badge(severity: str) -> str:
 @click.option("--caption", "captions", multiple=True, help="Caption per image, in order. Implies a template.")
 @click.option("--subtitle", "subtitles", multiple=True, help="Subtitle per image, in order.")
 @click.option("--locale", help="Language of the captions (e.g. ar, ja-JP), for text direction and shaping.")
+@click.option("--frame", help="Device frame: auto, phone, tablet, or a frame .png/.yaml path. Implies a template.")
 @json_option
 def generate_cmd(
-    images, target_ids, out_dir, mode, background, fmt, size, dry_run, template, captions, subtitles, locale, as_json
+    images,
+    target_ids,
+    out_dir,
+    mode,
+    background,
+    fmt,
+    size,
+    dry_run,
+    template,
+    captions,
+    subtitles,
+    locale,
+    frame,
+    as_json,
 ):
     """Resize IMAGES into compliant screenshots for one or more targets.
 
@@ -191,6 +206,7 @@ def generate_cmd(
             captions=list(captions) or None,
             subtitles=list(subtitles) or None,
             locale=locale,
+            frame=frame,
         )
     except AppPreviewError as exc:
         fail(exc, as_json)
@@ -286,6 +302,20 @@ def templates_cmd(name, as_json):
         return
     for t in templates.values():
         click.echo(f"{t.name:<10} {t.description}")
+
+
+@main.command(name="frames")
+@json_option
+def frames_cmd(as_json):
+    """List built-in device frames. Custom frames are PNGs with a transparent screen."""
+    if as_json:
+        emit_json([{"name": name, "description": text} for name, text in BUILTIN_FRAMES.items()])
+        return
+    for name, text in BUILTIN_FRAMES.items():
+        click.echo(f"{name:<8} {text}")
+    click.echo(
+        "\nCustom: any .png with a transparent screen area, or a manifest {image: frame.png, screen: [x, y, w, h]}"
+    )
 
 
 @main.command(name="locales")

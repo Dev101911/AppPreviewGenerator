@@ -81,6 +81,36 @@ The bundled default font is [Inter](https://github.com/rsms/inter) (SIL Open Fon
 Templates are rejected for targets where stores forbid added text or backgrounds
 (Wear OS, Android Automotive, the Play app icon).
 
+### Device frames
+
+![Built-in phone frames, a custom PNG frame, and the tablet frame](docs/images/frames.png)
+
+Put screenshots inside a device with `--frame` or `screenshot.frame` in a template:
+
+```bash
+apppreview frames                                   # auto, phone, tablet
+apppreview generate shot.png -t apple.iphone-6.9 --frame phone --caption "Plan your week"
+```
+
+```yaml
+screenshot:
+  frame: phone                       # or auto / tablet / path to your own frame
+  # frame: {name: phone, color: "#E5E5EA", island: false}
+```
+
+Built-in frames are drawn to fit each screenshot exactly, in portrait or landscape. To
+use real device artwork, such as the product bezels from Apple Design Resources
+(subject to Apple's terms), point `frame` at a PNG whose screen area is transparent. The
+screen is found automatically. If that doesn't work for your image, use a manifest:
+
+```yaml
+# iphone-frame.yaml
+image: my-phone-frame.png
+screen: [72, 69, 1206, 2622]          # x, y, width, height of the screen in the PNG (example values)
+```
+
+Frames are rejected for Wear OS and Android Automotive, where Google forbids them.
+
 ## Project config: `apppreview build`
 
 For a full store listing, describe every screen, target and locale in `apppreview.yaml`:

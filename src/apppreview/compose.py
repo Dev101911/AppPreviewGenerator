@@ -10,6 +10,7 @@ from importlib import resources
 from PIL import Image, ImageColor, ImageDraw, ImageFilter, ImageFont, ImageOps, features
 
 from apppreview.errors import AppPreviewError
+from apppreview.frames import FrameStyle, apply_frame
 from apppreview.locales import is_rtl, language
 from apppreview.specs import Size
 from apppreview.template import Background, Template, TextStyle
@@ -247,6 +248,9 @@ def compose(
 
     style = template.screenshot
     shot = ImageOps.exif_transpose(screenshot).convert("RGBA")
+    if style.frame:
+        frame = style.frame
+        shot = apply_frame(shot, FrameStyle(frame.name, _rgba(frame.color), frame.island), warnings)
     max_w, max_h = style.max_width * w, max(1, region_bottom - region_top)
     scale = min(max_w / shot.width, max_h / shot.height)
     if scale > 1.5:
@@ -255,8 +259,12 @@ def compose(
     shot = shot.resize(shot_size, Image.Resampling.LANCZOS)
     x = round((w - shot_size[0]) / 2)
     y = round(region_top + (max_h - shot_size[1]) / 2)
-    radius = min(round(style.corner_radius * unit), min(shot_size) // 2)
-    mask = _rounded_mask(shot_size, radius)
+    if style.frame:
+        # The frame already shapes the device; its own alpha is the outline.
+        radius, mask = 0, shot.getchannel("A")
+    else:
+        radius = min(round(style.corner_radius * unit), min(shot_size) // 2)
+        mask = _rounded_mask(shot_size, radius)
 
     if style.shadow:
         layer = Image.new("RGBA", size, (0, 0, 0, 0))
@@ -270,7 +278,7 @@ def compose(
     shot.putalpha(shot_alpha)
     canvas.alpha_composite(shot, (x, y))
 
-    if style.border:
+    if style.border and not style.frame:
         width = max(1, round(style.border_width * unit))
         ImageDraw.Draw(canvas).rounded_rectangle(
             (x, y, x + shot_size[0] - 1, y + shot_size[1] - 1), radius, outline=_rgba(style.border), width=width
