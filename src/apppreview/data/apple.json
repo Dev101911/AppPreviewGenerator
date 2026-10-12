@@ -1,0 +1,138 @@
+{
+  "store": "apple",
+  "name": "Apple App Store",
+  "source": "https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications",
+  "verified": "2026-10-12",
+  "defaults": {
+    "kind": "screenshot",
+    "formats": ["png", "jpeg"],
+    "alpha": false,
+    "count": {"min": 1, "max": 10}
+  },
+  "targets": [
+    {
+      "id": "apple.iphone-duo-outer",
+      "name": "iPhone Duo (outer display)",
+      "sizes": [[1398, 2034], [2034, 1398]],
+      "required": "Required from April 2027 for apps built with the iOS 27.1 SDK or later."
+    },
+    {
+      "id": "apple.iphone-duo-inner",
+      "name": "iPhone Duo (inner display)",
+      "sizes": [[2007, 2853], [2853, 2007]],
+      "required": "Required from April 2027 for apps built with the iOS 27.1 SDK or later."
+    },
+    {
+      "id": "apple.iphone-6.9",
+      "name": "iPhone 6.9\" (Dynamic Island, large)",
+      "sizes": [[1320, 2868], [1290, 2796], [1260, 2736], [2868, 1320], [2796, 1290], [2736, 1260]],
+      "fallback": "apple.iphone-6.5"
+    },
+    {
+      "id": "apple.iphone-6.5",
+      "name": "iPhone 6.5\" (Face ID, large)",
+      "sizes": [[1284, 2778], [1242, 2688], [2778, 1284], [2688, 1242]],
+      "required": "Required for iPhone apps if 6.9\" (Dynamic Island, large) screenshots are not provided."
+    },
+    {
+      "id": "apple.iphone-6.3",
+      "name": "iPhone 6.3\" (Dynamic Island, medium)",
+      "sizes": [[1206, 2622], [1179, 2556], [2622, 1206], [2556, 1179]],
+      "required": "Required for iPhone apps.",
+      "fallback": "apple.iphone-6.5"
+    },
+    {
+      "id": "apple.iphone-6.1",
+      "name": "iPhone 6.1\" (Face ID, medium)",
+      "sizes": [[1170, 2532], [1125, 2436], [1080, 2340], [2532, 1170], [2436, 1125], [2340, 1080]],
+      "fallback": "apple.iphone-6.3"
+    },
+    {
+      "id": "apple.iphone-5.5",
+      "name": "iPhone 5.5\" (Home button, large)",
+      "sizes": [[1242, 2208], [2208, 1242]],
+      "fallback": "apple.iphone-6.1"
+    },
+    {
+      "id": "apple.iphone-4.7",
+      "name": "iPhone 4.7\" (Home button, medium)",
+      "sizes": [[750, 1334], [1334, 750]],
+      "fallback": "apple.iphone-5.5"
+    },
+    {
+      "id": "apple.iphone-4",
+      "name": "iPhone 4\" (Home button)",
+      "sizes": [[640, 1136], [640, 1096], [1136, 640], [1136, 600]],
+      "fallback": "apple.iphone-4.7",
+      "notes": ["Smaller sizes (640x1096, 1136x600) are for screenshots without the status bar."]
+    },
+    {
+      "id": "apple.iphone-3.5",
+      "name": "iPhone 3.5\" (Home button)",
+      "sizes": [[640, 960], [640, 920], [960, 640], [960, 600]],
+      "fallback": "apple.iphone-4",
+      "notes": ["Smaller sizes (640x920, 960x600) are for screenshots without the status bar."]
+    },
+    {
+      "id": "apple.ipad-13",
+      "name": "iPad 13\"",
+      "sizes": [[2064, 2752], [2048, 2732], [2752, 2064], [2732, 2048]],
+      "required": "Required for apps that run on iPad."
+    },
+    {
+      "id": "apple.ipad-12.9",
+      "name": "iPad Pro 12.9\" (2nd generation)",
+      "sizes": [[2048, 2732], [2732, 2048]],
+      "fallback": "apple.ipad-13"
+    },
+    {
+      "id": "apple.ipad-11",
+      "name": "iPad 11\"",
+      "sizes": [[1668, 2420], [1668, 2388], [1640, 2360], [1488, 2266], [2420, 1668], [2388, 1668], [2360, 1640], [2266, 1488]],
+      "fallback": "apple.ipad-13"
+    },
+    {
+      "id": "apple.ipad-10.5",
+      "name": "iPad 10.5\"",
+      "sizes": [[1668, 2224], [2224, 1668]],
+      "fallback": "apple.ipad-12.9"
+    },
+    {
+      "id": "apple.ipad-9.7",
+      "name": "iPad 9.7\"",
+      "sizes": [[1536, 2048], [1536, 2008], [768, 1024], [768, 1004], [2048, 1536], [2048, 1496], [1024, 768], [1024, 748]],
+      "fallback": "apple.ipad-10.5",
+      "notes": ["Sizes ending in 2008/1496/1004/748 are for screenshots without the status bar."]
+    },
+    {
+      "id": "apple.mac",
+      "name": "Mac",
+      "sizes": [[2880, 1800], [2560, 1600], [1440, 900], [1280, 800]],
+      "required": "Required for Mac apps."
+    },
+    {
+      "id": "apple.tv",
+      "name": "Apple TV",
+      "sizes": [[3840, 2160], [1920, 1080]],
+      "required": "Required for Apple TV apps."
+    },
+    {
+      "id": "apple.vision-pro",
+      "name": "Apple Vision Pro",
+      "sizes": [[3840, 2160]],
+      "required": "Required for Apple Vision Pro apps."
+    },
+    {
+      "id": "apple.watch",
+      "name": "Apple Watch",
+      "sizes": [[422, 514], [416, 496], [410, 502], [396, 484], [368, 448], [312, 390]],
+      "uniform_size": true,
+      "required": "Required for Apple Watch apps.",
+      "notes": [
+        "422x514: Ultra 4, Ultra 3. 410x502: Ultra 2, Ultra. 416x496: Series 12, 11, 10.",
+        "396x484: Series 9, 8, 7. 368x448: Series 6, 5, 4, SE. 312x390: Series 3, 2, 1.",
+        "Use one size consistently across all localizations."
+      ]
+    }
+  ]
+}
