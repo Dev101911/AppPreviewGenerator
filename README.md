@@ -136,6 +136,8 @@ anything is rendered. Run `apppreview schema config` for the JSON Schema.
   `iw-IL`, `zh-Hans` vs `zh-CN`). `build` warns about locales a store doesn't support, and
   `apppreview locales ja-JP` shows each store's code. One-off commands take `--locale`.
 
+![Arabic feature graphic, laid out right to left](docs/images/feature-graphic-ar.png)
+
 ## Store graphics and icons
 
 Render the Google Play feature graphic (1024×500) and Android TV banner (1280×720)
