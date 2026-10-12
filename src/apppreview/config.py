@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from apppreview.errors import AppPreviewError
 from apppreview.generate import (
@@ -19,7 +19,9 @@ from apppreview.generate import (
     output_name,
     produce,
     resolve_background,
+    save_image,
 )
+from apppreview.graphic import check_graphic_target, graphic_name, render_graphic
 from apppreview.specs import get_target
 from apppreview.template import Template, load_template
 from apppreview.validate import Report, validate_images
@@ -46,12 +48,22 @@ class Screen(BaseModel):
     template: str | dict | None = Field(None, description="Template overrides for this screen only")
 
 
+class Graphic(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    target: str = Field(description="A graphic target, e.g. google.feature-graphic or google.tv-banner")
+    title: LocalizedText = Field(description="Usually the app name; text or a locale -> text mapping")
+    subtitle: LocalizedText | None = None
+    icon: str | None = Field(None, description="App icon path, relative to the config file; may use {locale}")
+    template: str | dict | None = Field(None, description="Template overrides for this graphic")
+
+
 class Config(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     version: Literal[1] = 1
     out: str = Field("apppreview-out", description="Output directory, relative to the config file")
-    targets: list[str] = Field(min_length=1, description="Target IDs; see `apppreview targets`")
+    targets: list[str] = Field(default_factory=list, description="Screenshot target IDs; see `apppreview targets`")
     locales: list[str] = Field(default_factory=list, description="Locale codes, e.g. en-US; empty for a single set")
     template: str | dict | None = Field(
         None, description="Built-in template name, path to a template file, or inline template. Omit for plain resize."
@@ -59,7 +71,16 @@ class Config(BaseModel):
     mode: Literal["fit", "fill", "stretch"] = Field("fit", description="Resize mode when no template is used")
     background: str = Field("#ffffff", description="Letterbox color when no template is used, or 'auto'")
     format: Literal["png", "jpeg"] | None = None
-    screens: list[Screen] = Field(min_length=1)
+    screens: list[Screen] = Field(default_factory=list)
+    graphics: list[Graphic] = Field(default_factory=list, description="Feature graphic, TV banner, ...")
+
+    @model_validator(mode="after")
+    def _has_work(self):
+        if not self.screens and not self.graphics:
+            raise ValueError("add at least one entry to screens or graphics")
+        if self.screens and not self.targets:
+            raise ValueError("screens need at least one entry in targets")
+        return self
 
 
 def config_schema() -> dict:
@@ -113,13 +134,14 @@ def localized(text: LocalizedText | None, locale: str | None, what: str) -> str 
 
 @dataclass
 class Job:
-    screen: Screen
+    kind: Literal["screen", "graphic"]
+    name: str  # screen id or graphic name
     target_id: str
     locale: str | None
-    source: Path
+    source: Path | None  # screenshot, or optional icon for graphics
     dest: Path
     template: Template | None
-    caption: str | None
+    caption: str | None  # title for graphics
     subtitle: str | None
 
 
@@ -147,10 +169,11 @@ class BuildResult:
 def plan(config: Config, base_dir: Path, only_targets=(), only_locales=()) -> list[Job]:
     """Resolve every output to produce, failing fast on any config problem."""
     targets = [get_target(t) for t in config.targets if not only_targets or t in only_targets]
+    graphics = [g for g in config.graphics if not only_targets or g.target in only_targets]
     locales = [loc for loc in config.locales if not only_locales or loc in only_locales] or (
         [None] if not config.locales else []
     )
-    if not targets or not locales:
+    if not (targets and config.screens or graphics) or not locales:
         raise AppPreviewError("nothing_to_build", "The --target/--locale filters match nothing in the config")
     if config.background != "auto":
         resolve_background(config.background, None)
@@ -187,7 +210,8 @@ def plan(config: Config, base_dir: Path, only_targets=(), only_locales=()) -> li
                 what = f"Screen '{screen.id}'"
                 jobs.append(
                     Job(
-                        screen=screen,
+                        kind="screen",
+                        name=screen.id,
                         target_id=target.id,
                         locale=locale,
                         source=source,
@@ -197,6 +221,32 @@ def plan(config: Config, base_dir: Path, only_targets=(), only_locales=()) -> li
                         subtitle=localized(screen.subtitle, locale, f"{what} subtitle"),
                     )
                 )
+    for g in graphics:
+        target = get_target(g.target)
+        check_graphic_target(target)
+        check_target_options(target, 1, config.format, None, True)
+        template = load_template(base_template or "clean", g.template, base_dir)
+        fmt = config.format or target.formats[0]
+        for locale in locales:
+            folder = out_root / locale / target.id if locale else out_root / target.id
+            icon = base_dir / g.icon.format(locale=locale or "") if g.icon else None
+            if icon and not icon.is_file():
+                missing.append(str(icon))
+            name = graphic_name(target, fmt)
+            what = f"Graphic '{target.id}'"
+            jobs.append(
+                Job(
+                    kind="graphic",
+                    name=name.rsplit(".", 1)[0],
+                    target_id=target.id,
+                    locale=locale,
+                    source=icon,
+                    dest=folder / name,
+                    template=template,
+                    caption=localized(g.title, locale, f"{what} title"),
+                    subtitle=localized(g.subtitle, locale, f"{what} subtitle"),
+                )
+            )
     if missing:
         listed = "\n".join(f"  {m}" for m in sorted(set(missing)))
         raise AppPreviewError("input_not_found", f"{len(set(missing))} source image(s) not found:\n{listed}")
@@ -217,22 +267,29 @@ def build(
     groups: dict[tuple[str | None, str], list[Output]] = {}
     for job in jobs:
         target = get_target(job.target_id)
-        if job.source not in cache:
+        if job.source and job.source not in cache:
             cache[job.source] = load_source(job.source)
-        out_size, fmt, scale, warnings = produce(
-            cache[job.source],
-            target,
-            job.dest,
-            fmt=config.format,
-            mode=config.mode,
-            background=config.background,
-            template=job.template,
-            caption=job.caption,
-            subtitle=job.subtitle,
-            dry_run=dry_run,
-        )
+        if job.kind == "graphic":
+            fmt = config.format or target.formats[0]
+            out_size, scale, warnings = target.sizes[0], None, []
+            if not dry_run:
+                img, warnings = render_graphic(out_size, job.template, job.caption, job.subtitle, cache.get(job.source))
+                save_image(img, job.dest, fmt)
+        else:
+            out_size, fmt, scale, warnings = produce(
+                cache[job.source],
+                target,
+                job.dest,
+                fmt=config.format,
+                mode=config.mode,
+                background=config.background,
+                template=job.template,
+                caption=job.caption,
+                subtitle=job.subtitle,
+                dry_run=dry_run,
+            )
         output = Output(
-            str(job.source), target.id, str(job.dest), *out_size, fmt, scale, warnings, job.locale, job.screen.id
+            str(job.source or ""), target.id, str(job.dest), *out_size, fmt, scale, warnings, job.locale, job.name
         )
         outputs.append(output)
         groups.setdefault((job.locale, target.id), []).append(output)
@@ -275,4 +332,12 @@ screens:
       default: screenshots/{locale}/detail.png
     caption:
       en-US: Every detail, one tap away
+
+# Store graphics rendered from your app name and icon (optional).
+graphics:
+  - target: google.feature-graphic
+    title: My App
+    subtitle:
+      en-US: Plan your whole week in seconds
+    icon: assets/icon.png
 """

@@ -133,6 +133,20 @@
         "396x484: Series 9, 8, 7. 368x448: Series 6, 5, 4, SE. 312x390: Series 3, 2, 1.",
         "Use one size consistently across all localizations."
       ]
+    },
+    {
+      "id": "apple.icon",
+      "name": "App Store icon",
+      "kind": "icon",
+      "formats": ["png"],
+      "count": {"min": 1, "max": 1},
+      "sizes": [[1024, 1024]],
+      "templates_allowed": false,
+      "frames_allowed": false,
+      "notes": [
+        "Square, opaque artwork with no rounded corners; the system applies the mask.",
+        "Usually supplied through the app's Xcode asset catalog."
+      ]
     }
   ]
 }

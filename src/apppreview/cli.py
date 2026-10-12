@@ -16,6 +16,7 @@ from apppreview import __version__
 from apppreview.config import DEFAULT_CONFIG, STARTER_CONFIG, build, config_schema, template_schema
 from apppreview.errors import AppPreviewError
 from apppreview.generate import MODES, generate
+from apppreview.graphic import generate_graphic
 from apppreview.specs import STORES, format_sizes, get_target, load_targets
 from apppreview.template import builtin_templates
 from apppreview.validate import ERROR, identify, validate_images
@@ -210,6 +211,25 @@ def _report_outputs(result, dry_run: bool, as_json: bool):
         if not dry_run:
             click.echo("\nAll outputs are compliant." if result.ok else "\nSome outputs failed validation.")
     sys.exit(EXIT_OK if result.ok else EXIT_INVALID)
+
+
+@main.command(name="graphic")
+@click.option("-t", "--target", "target_id", required=True, help="google.feature-graphic or google.tv-banner.")
+@click.option("--title", required=True, help="Main text, usually the app name.")
+@click.option("--subtitle", help="Optional tagline.")
+@click.option("--icon", type=click.Path(), help="App icon image, shown left of the text.")
+@click.option("--template", default="clean", show_default=True, help="Template for background, colors and fonts.")
+@click.option("-o", "--out", default="apppreview-out", show_default=True, help="Output file or directory.")
+@click.option("--format", "fmt", type=click.Choice(["png", "jpeg"]), help="Output format [default: png].")
+@click.option("--dry-run", is_flag=True, help="Report what would be written without writing files.")
+@json_option
+def graphic_cmd(target_id, title, subtitle, icon, template, out, fmt, dry_run, as_json):
+    """Render a store graphic (feature graphic, TV banner) from a title and app icon."""
+    try:
+        result = generate_graphic(target_id, title, subtitle, icon, template, out, fmt, dry_run)
+    except AppPreviewError as exc:
+        fail(exc, as_json)
+    _report_outputs(result, dry_run, as_json)
 
 
 @main.command(name="build")
