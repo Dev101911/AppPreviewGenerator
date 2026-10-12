@@ -1,0 +1,108 @@
+{
+  "store": "google",
+  "name": "Google Play",
+  "source": "https://support.google.com/googleplay/android-developer/answer/9866151",
+  "verified": "2026-10-12",
+  "defaults": {
+    "kind": "screenshot",
+    "formats": ["png", "jpeg"],
+    "alpha": false,
+    "max_bytes": 8388608,
+    "count": {"min": 1, "max": 8},
+    "constraints": {"min_side": 320, "max_side": 3840, "max_aspect": 2.0}
+  },
+  "targets": [
+    {
+      "id": "google.phone",
+      "name": "Phone",
+      "count": {"min": 2, "max": 8},
+      "recommended_sizes": [[1080, 1920], [1920, 1080]],
+      "recommendations": {"min_side": 1080, "aspects": ["9:16", "16:9"], "min_count": 4},
+      "notes": [
+        "To be eligible for promotion, provide at least 4 screenshots (3 for games) at 1080x1920 (9:16) or 1920x1080 (16:9) or larger.",
+        "A listing needs at least 2 screenshots in total to publish."
+      ]
+    },
+    {
+      "id": "google.tablet-7",
+      "name": "7-inch tablet",
+      "count": {"min": 4, "max": 8},
+      "constraints": {"min_side": 1080, "max_side": 7680, "aspects": ["9:16", "16:9"]},
+      "recommended_sizes": [[1080, 1920], [1920, 1080]]
+    },
+    {
+      "id": "google.tablet-10",
+      "name": "10-inch tablet",
+      "count": {"min": 4, "max": 8},
+      "constraints": {"min_side": 1080, "max_side": 7680, "aspects": ["9:16", "16:9"]},
+      "recommended_sizes": [[1440, 2560], [2560, 1440]]
+    },
+    {
+      "id": "google.chromebook",
+      "name": "Chromebook",
+      "count": {"min": 4, "max": 8},
+      "constraints": {"min_side": 1080, "max_side": 7680, "aspects": ["9:16", "16:9"]},
+      "recommended_sizes": [[1920, 1080], [1080, 1920]]
+    },
+    {
+      "id": "google.wear-os",
+      "name": "Wear OS",
+      "constraints": {"min_side": 384, "max_side": 3840, "aspects": ["1:1"]},
+      "recommended_sizes": [[384, 384]],
+      "frames_allowed": false,
+      "notes": ["Show only the app interface: no device frames, extra text, graphics, backgrounds, transparency or masking."]
+    },
+    {
+      "id": "google.tv",
+      "name": "Android TV",
+      "recommended_sizes": [[1920, 1080]],
+      "required": "At least one TV screenshot (and a TV banner) is required for Android TV apps."
+    },
+    {
+      "id": "google.xr",
+      "name": "Android XR",
+      "count": {"min": 4, "max": 8},
+      "constraints": {"min_side": 1200, "max_side": 3840, "aspects": ["8:5"]},
+      "recommended_sizes": [[3840, 2400]],
+      "notes": ["Minimum 1920x1200; recommended 3840x2400."]
+    },
+    {
+      "id": "google.automotive",
+      "name": "Android Automotive OS",
+      "count": {"min": 4, "max": 8},
+      "constraints": null,
+      "sizes": [[800, 1280], [1024, 768]],
+      "notes": ["Provide at least 2 portrait (800x1280) and 2 landscape (1024x768) screenshots captured with the generic system UI."]
+    },
+    {
+      "id": "google.feature-graphic",
+      "name": "Feature graphic",
+      "kind": "graphic",
+      "count": {"min": 1, "max": 1},
+      "constraints": null,
+      "max_bytes": null,
+      "sizes": [[1024, 500]],
+      "notes": ["Keep key content centered; avoid device imagery and store badges."]
+    },
+    {
+      "id": "google.tv-banner",
+      "name": "Android TV banner",
+      "kind": "graphic",
+      "count": {"min": 1, "max": 1},
+      "constraints": null,
+      "max_bytes": null,
+      "sizes": [[1280, 720]]
+    },
+    {
+      "id": "google.icon",
+      "name": "App icon",
+      "kind": "icon",
+      "formats": ["png"],
+      "alpha": true,
+      "count": {"min": 1, "max": 1},
+      "constraints": null,
+      "max_bytes": 1048576,
+      "sizes": [[512, 512]]
+    }
+  ]
+}
