@@ -8,6 +8,22 @@ uv venv && uv pip install -e ".[dev]"
 .venv/bin/ruff check . && .venv/bin/ruff format --check .
 ```
 
+## Documentation site
+
+`docs/index.html` is the GitHub Pages site. It is generated: edit `docs/_template.html`
+for the guides, then run
+
+```bash
+python scripts/build_docs.py
+```
+
+The command reference, target tables, config/template fields, error codes and MCP tool list
+come from the code, so regenerate after changing any of them. CI fails if the page is stale,
+and `tests/test_docs.py` fails if a new error code or command has no documentation.
+
+To publish it (one time): repository **Settings → Pages → Build and deployment**, source
+"Deploy from a branch", branch `main`, folder `/docs`.
+
 ## Updating store specs
 
 The tool's compliance rules live in data files, not code:
