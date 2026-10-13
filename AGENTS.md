@@ -68,6 +68,9 @@ screenshots. Video sources must go to `-preview` targets and images to the other
 app-preview generate shot.png -t apple.iphone-6.9 --template sunset --caption "Plan your week" --json
 ```
 Pass `--caption` once per input image, in the same order.
+Add `--badge PRO` (also once per image) to mark a paid feature with a pill above the caption
+(`badge: {position: below}` in a template moves it). `--caption-width 0.7` narrows the text
+column; `--caption-weight semibold` (or `100`-`900`) sets the caption's font weight.
 Add `--frame auto` (or `phone`, `tablet`, a frame `.png`) to show the screenshot inside a device; `app-preview frames --json` lists built-ins.
 
 **Play feature graphic / TV banner**

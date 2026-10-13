@@ -273,7 +273,9 @@ apple.iphone-6.9: 1 file(s), 2 error(s), 0 warning(s)</code></pre>
 <p>A template puts the screenshot on a styled canvas with a caption and optional subtitle. Every size is a fraction of the canvas's shorter side, so one template works for iPhone, iPad, landscape and Google sizes alike. Captions wrap, shrink to fit, and are cut off with a warning only if they still don't fit at the minimum size.</p>
 <pre><code class="lang-bash">app-preview templates                   # list built-ins
 app-preview templates dark              # every setting of one template
-app-preview generate shot.png -t apple.iphone-6.9 --template sunset --caption "Plan your week" --subtitle "In seconds"</code></pre>
+app-preview generate shot.png -t apple.iphone-6.9 --template sunset --caption "Plan your week" --subtitle "In seconds"
+app-preview generate shot.png -t apple.iphone-6.9 --caption "Sync everywhere" --badge Pro --caption-width 0.7 --caption-weight semibold</code></pre>
+<p><code>--caption-width</code> narrows the text column (a fraction of the canvas width), <code>--caption-weight</code> picks the caption's font weight, and <code>--badge</code> adds a pill above the caption, e.g. to mark a paid feature. Templates set the same things with <code>max_width</code>, <code>weight</code> and the <code>badge</code> section.</p>
 <!-- @templates -->
 <h3>Custom templates</h3>
 <p>Write YAML, usually extending a built-in and changing a few settings:</p>
@@ -281,12 +283,13 @@ app-preview generate shot.png -t apple.iphone-6.9 --template sunset --caption "P
 extends: dark
 background:
   gradient: {from: "#4F46E5", to: "#0EA5E9", angle: 135}   # or {color: ...} or {image: bg.png}
-caption: {color: "#FFFFFF", font: fonts/Brand-Bold.ttf, size: 0.08}
-subtitle: {color: "#E0E7FF"}
+caption: {color: "#FFFFFF", font: fonts/Brand-Bold.ttf, size: 0.08, max_width: 0.75}
+subtitle: {color: "#E0E7FF", weight: light}                  # thin ... black, or 100-900
 caption_position: top                                        # or bottom
+badge: {position: above, background: "#FACC15", color: "#111111"}   # or below
 screenshot: {max_width: 0.8, corner_radius: 0.05, shadow: {blur: 0.03}, frame: phone}</code></pre>
 <p>Use it with <code>--template brand.yaml</code> or <code>template: brand.yaml</code> in the config. Relative paths (fonts, background images, frames) resolve against the file that declares them. Gradient angles follow CSS: 180 runs top to bottom and 90 left to right. All settings are listed in the <a href="#template-reference">template reference</a>; <code>app-preview schema template</code> prints the JSON Schema.</p>
-<div class="callout"><p>The default font is <a href="https://github.com/rsms/inter">Inter</a>, bundled under the SIL Open Font License, so output looks the same on every machine. It covers Latin, Greek and Cyrillic; see <a href="#localization">Localization</a> for other scripts.</p></div>
+<div class="callout"><p>The default font is <a href="https://github.com/rsms/inter">Inter</a>, bundled as a variable font under the SIL Open Font License, so output looks the same on every machine and every weight from 100 to 900 is available. A custom variable font with a weight axis uses <code>weight</code> too; a static font file keeps its own weight. It covers Latin, Greek and Cyrillic; see <a href="#localization">Localization</a> for other scripts.</p></div>
 <p>Templates are refused (<code>template_not_allowed</code>) for targets where the store forbids added text or backgrounds: Wear OS, Android Automotive, and app icons.</p>
 
 <h2 id="frames">Device frames</h2>
@@ -323,6 +326,7 @@ screens:
       apple.ipad-*: shots/{locale}/ipad/detail.png
       default: shots/{locale}/detail.png
     caption: {default: "Every detail, one tap away"}
+    badge: {default: Pro, de: Profi}       # optional pill, e.g. for paid features
     template: {caption_position: bottom}   # per-screen overrides
   - id: demo
     source: recordings/demo.mov       # video sources go to *-preview targets only

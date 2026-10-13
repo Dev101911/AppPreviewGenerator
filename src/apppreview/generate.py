@@ -205,6 +205,7 @@ def produce(
     subtitle: str | None = None,
     dry_run: bool = False,
     locale: str | None = None,
+    badge: str | None = None,
 ) -> tuple[Size, str, float | None, list[str]]:
     """Render one image for one target and save it to `dest` (with the right extension).
 
@@ -218,7 +219,7 @@ def produce(
     if template:
         scale = None
         if not dry_run:
-            rendered, scale, warnings = compose(img, out_size, template, caption, subtitle, locale)
+            rendered, scale, warnings = compose(img, out_size, template, caption, subtitle, locale, badge)
     else:
         scale = _plain_scale(source_size, out_size, mode)
         if scale > UPSCALE_WARNING:
@@ -263,6 +264,9 @@ def generate(
     layout: str = "default",
     start: float = 0.0,
     extend: bool = False,
+    badges: list[str] | None = None,
+    caption_width: float | None = None,
+    caption_weight: str | int | None = None,
 ) -> GenerateResult:
     if mode not in MODES:
         raise AppPreviewError("invalid_mode", f"Invalid mode '{mode}'; use one of {', '.join(MODES)}")
@@ -275,15 +279,12 @@ def generate(
         size = parse_size(size)
     if template is not None and not isinstance(template, Template):
         template = load_template(template)
-    for name, texts in (("captions", captions), ("subtitles", subtitles)):
+    for name, texts in (("captions", captions), ("subtitles", subtitles), ("badges", badges)):
         if texts and len(texts) != len(inputs):
             raise AppPreviewError(
                 "text_count_mismatch", f"{len(texts)} {name} given for {len(inputs)} images; give one per image"
             )
-    if (captions or subtitles or frame) and template is None:
-        template = load_template("clean")
-    if frame:
-        template = load_template(template, {"screenshot": {"frame": frame}})
+    template = _apply_options(template, captions or subtitles or badges, frame, caption_width, caption_weight)
     if background != "auto":
         resolve_background(background, None)  # fail fast on an invalid color
 
@@ -324,6 +325,7 @@ def generate(
                     caption=captions[index - 1] if captions else None,
                     subtitle=subtitles[index - 1] if subtitles else None,
                     locale=locale,
+                    badge=badges[index - 1] if badges else None,
                     start=start,
                     extend=extend,
                     dry_run=dry_run,
@@ -354,6 +356,7 @@ def generate(
                 subtitle=subtitles[index - 1] if subtitles else None,
                 dry_run=dry_run,
                 locale=locale,
+                badge=badges[index - 1] if badges else None,
             )
             output = Output(str(path), target.id, str(dest), *out_size, target_format, scale, warnings)
             outputs.append(output)
@@ -362,6 +365,30 @@ def generate(
             reports.append(validate_images([o.path for o in target_outputs], target))
 
     return GenerateResult(outputs=outputs, reports=reports, dry_run=dry_run, out_dir=str(out_dir))
+
+
+def _apply_options(
+    template: Template | None,
+    has_text,
+    frame: str | None,
+    caption_width: float | None,
+    caption_weight: str | int | None,
+) -> Template | None:
+    """Apply the --frame/--caption-width/--caption-weight shortcuts; text or a frame implies `clean`."""
+    overrides: dict = {}
+    if frame:
+        overrides["screenshot"] = {"frame": frame}
+    if caption_width is not None:
+        overrides["caption"] = {"max_width": caption_width}
+        overrides["subtitle"] = {"max_width": caption_width}
+    if caption_weight is not None:
+        weight = int(caption_weight) if str(caption_weight).isdigit() else caption_weight
+        overrides.setdefault("caption", {})["weight"] = weight
+    if (has_text or overrides) and template is None:
+        template = load_template("clean")
+    if overrides:
+        template = load_template(template, overrides)
+    return template
 
 
 def slideshow_timing(count: int, seconds: float | None, transition: float) -> tuple[float, float]:
@@ -398,6 +425,9 @@ def make_slideshow(
     locale: str | None = None,
     layout: str = "default",
     dry_run: bool = False,
+    badges: list[str] | None = None,
+    caption_width: float | None = None,
+    caption_weight: str | int | None = None,
 ) -> GenerateResult:
     """Render each image for the preview size (plain fit or template) and join them into a video."""
     if not images:
@@ -406,14 +436,12 @@ def make_slideshow(
     for target in resolved:
         if target.kind != "video":
             raise AppPreviewError("not_a_video_target", f"{target.id} is not a preview target; use a *-preview target")
-    if captions and len(captions) != len(images):
-        raise AppPreviewError("text_count_mismatch", f"{len(captions)} captions given for {len(images)} images")
+    for name, texts in (("captions", captions), ("badges", badges)):
+        if texts and len(texts) != len(images):
+            raise AppPreviewError("text_count_mismatch", f"{len(texts)} {name} given for {len(images)} images")
     if template is not None and not isinstance(template, Template):
         template = load_template(template)
-    if (captions or frame) and template is None:
-        template = load_template("clean")
-    if frame:
-        template = load_template(template, {"screenshot": {"frame": frame}})
+    template = _apply_options(template, captions or badges, frame, caption_width, caption_weight)
     seconds, total = slideshow_timing(len(images), seconds, transition)
     check_layout(layout)
     sources = [load_source(path) for path in images]
@@ -432,7 +460,13 @@ def make_slideshow(
                 for i, img in enumerate(sources):
                     if template:
                         rendered, _, slide_warnings = compose(
-                            img, size, template, captions[i] if captions else None, None, locale
+                            img,
+                            size,
+                            template,
+                            captions[i] if captions else None,
+                            None,
+                            locale,
+                            badges[i] if badges else None,
                         )
                     else:
                         rendered, _ = render(img, size, "fit", resolve_background("auto", img), False)

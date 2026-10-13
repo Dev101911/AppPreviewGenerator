@@ -5,7 +5,7 @@ from apppreview.graphic import generate_graphic
 from apppreview.specs import Target, get_target, load_targets
 from apppreview.validate import identify, validate_images
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"
 
 __all__ = [
     "Target",

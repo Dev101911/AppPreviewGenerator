@@ -375,6 +375,7 @@ def produce_video(
     caption: str | None = None,
     subtitle: str | None = None,
     locale: str | None = None,
+    badge: str | None = None,
     start: float = 0.0,
     extend: bool = False,
     dry_run: bool = False,
@@ -395,7 +396,7 @@ def produce_video(
     warnings = list(plan.warnings)
     layers = None
     if template is not None:
-        layers = layout(template, plan.size, (info.width, info.height), caption, subtitle, locale)
+        layers = layout(template, plan.size, (info.width, info.height), caption, subtitle, locale, badge)
         warnings += layers.warnings
         scale = layers.scale
     else:

@@ -21,10 +21,25 @@ from apppreview.generate import MODES, generate, make_slideshow
 from apppreview.graphic import generate_graphic
 from apppreview.locales import is_rtl, store_locale, store_locales
 from apppreview.specs import STORES, format_sizes, get_target, load_targets
-from apppreview.template import builtin_templates
+from apppreview.template import WEIGHTS, builtin_templates
 from apppreview.validate import ERROR, identify, validate_images
 
 EXIT_OK, EXIT_INVALID, EXIT_USAGE = 0, 1, 2
+
+
+class WeightType(click.ParamType):
+    name = "weight"
+
+    def convert(self, value, param, ctx):
+        if isinstance(value, int) or str(value).isdigit():
+            if 100 <= int(value) <= 900:
+                return int(value)
+        elif str(value).lower() in WEIGHTS:
+            return str(value).lower()
+        self.fail(f"{value!r} is not a weight; use {', '.join(WEIGHTS)} or 100-900", param, ctx)
+
+
+WEIGHT = WeightType()
 
 json_option = click.option("--json", "as_json", is_flag=True, help="Write machine-readable JSON to stdout.")
 
@@ -171,6 +186,11 @@ def _badge(severity: str) -> str:
 @click.option("--template", help="Template name (see `app-preview templates`) or template .yaml path.")
 @click.option("--caption", "captions", multiple=True, help="Caption per image, in order. Implies a template.")
 @click.option("--subtitle", "subtitles", multiple=True, help="Subtitle per image, in order.")
+@click.option("--badge", "badges", multiple=True, help="Badge per image, in order (e.g. PRO). Implies a template.")
+@click.option(
+    "--caption-width", type=click.FloatRange(0, 1, min_open=True), help="Max text width, fraction of the canvas width."
+)
+@click.option("--caption-weight", type=WEIGHT, help="Caption weight: regular, semibold, bold, ... or 100-900.")
 @click.option("--locale", help="Language of the captions (e.g. ar, ja-JP), for text direction and shaping.")
 @click.option("--frame", help="Device frame: auto, phone, tablet, or a frame .png/.yaml path. Implies a template.")
 @click.option("--start", type=float, default=0.0, help="Videos: start time in seconds (output is at most 30s).")
@@ -193,6 +213,9 @@ def generate_cmd(
     template,
     captions,
     subtitles,
+    badges,
+    caption_width,
+    caption_weight,
     locale,
     frame,
     start,
@@ -223,6 +246,9 @@ def generate_cmd(
             layout=layout or "default",
             start=start,
             extend=extend,
+            badges=list(badges) or None,
+            caption_width=caption_width,
+            caption_weight=caption_weight,
         )
     except AppPreviewError as exc:
         fail(exc, as_json)
@@ -240,6 +266,11 @@ def generate_cmd(
 @click.option("--template", help="Template for every slide.")
 @click.option("--caption", "captions", multiple=True, help="Caption per image, in order. Implies a template.")
 @click.option("--frame", help="Device frame for every slide. Implies a template.")
+@click.option("--badge", "badges", multiple=True, help="Badge per image, in order (e.g. PRO). Implies a template.")
+@click.option(
+    "--caption-width", type=click.FloatRange(0, 1, min_open=True), help="Max text width, fraction of the canvas width."
+)
+@click.option("--caption-weight", type=WEIGHT, help="Caption weight: regular, semibold, bold, ... or 100-900.")
 @click.option("--locale", help="Language of the captions.")
 @click.option(
     "--layout",
@@ -249,7 +280,21 @@ def generate_cmd(
 @click.option("--dry-run", is_flag=True, help="Report what would be written without writing files.")
 @json_option
 def slideshow_cmd(
-    images, target_ids, out_dir, seconds, transition, template, captions, frame, locale, layout, dry_run, as_json
+    images,
+    target_ids,
+    out_dir,
+    seconds,
+    transition,
+    template,
+    captions,
+    frame,
+    badges,
+    caption_width,
+    caption_weight,
+    locale,
+    layout,
+    dry_run,
+    as_json,
 ):
     """Turn screenshots into an app preview video with crossfades (silent audio)."""
     try:
@@ -265,6 +310,9 @@ def slideshow_cmd(
             locale=locale,
             layout=layout or "default",
             dry_run=dry_run,
+            badges=list(badges) or None,
+            caption_width=caption_width,
+            caption_weight=caption_weight,
         )
     except AppPreviewError as exc:
         fail(exc, as_json)

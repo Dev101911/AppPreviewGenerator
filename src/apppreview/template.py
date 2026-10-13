@@ -33,6 +33,29 @@ def _check_color(value: str) -> str:
 
 Color = Annotated[str, AfterValidator(_check_color)]
 
+WEIGHTS = {
+    "thin": 100,
+    "extralight": 200,
+    "light": 300,
+    "regular": 400,
+    "medium": 500,
+    "semibold": 600,
+    "bold": 700,
+    "extrabold": 800,
+    "black": 900,
+}
+
+WeightName = Literal["thin", "extralight", "light", "regular", "medium", "semibold", "bold", "extrabold", "black"]
+Weight = WeightName | Annotated[int, Field(ge=100, le=900)]
+WEIGHT_HELP = (
+    "Font weight: thin, extralight, light, regular, medium, semibold, bold, extrabold, black, or 100-900. "
+    "Applies to the bundled Inter and to variable fonts with a weight axis"
+)
+
+
+def weight_value(weight: str | int) -> int:
+    return weight if isinstance(weight, int) else WEIGHTS[weight]
+
 
 class Gradient(_Model):
     start: Color = Field(alias="from", description="Start color")
@@ -56,20 +79,40 @@ class Background(_Model):
 
 class TextStyle(_Model):
     font: str | None = Field(None, description="Font file path or installed font file name; defaults to bundled Inter")
-    weight: Literal["regular", "bold"] = Field("bold", description="Weight of the bundled default font")
+    weight: Weight = Field("bold", description=WEIGHT_HELP)
     size: float = Field(0.075, gt=0, le=0.5, description="Font size as a fraction of the shorter canvas side")
     min_size: float = Field(0.035, gt=0, le=0.5, description="Smallest size when shrinking text to fit")
     color: Color = "#111111"
     align: Literal["left", "center", "right"] = "center"
     max_lines: int = Field(3, ge=1, le=10)
     line_spacing: float = Field(1.15, ge=0.8, le=3)
+    max_width: float | None = Field(
+        None,
+        gt=0,
+        le=1,
+        description="Max text width as a fraction of the canvas width (never past the padding); "
+        "the column follows `align`. Default: the full width between the paddings",
+    )
 
 
 class SubtitleStyle(TextStyle):
-    weight: Literal["regular", "bold"] = "regular"
+    weight: Weight = Field("regular", description=WEIGHT_HELP)
     size: float = Field(0.042, gt=0, le=0.5)
     min_size: float = Field(0.028, gt=0, le=0.5)
     color: Color = "#444444"
+
+
+class BadgeStyle(_Model):
+    position: Literal["above", "below"] = Field("above", description="Above or below the caption and subtitle")
+    font: str | None = Field(None, description="Font file path or installed font file name; defaults to bundled Inter")
+    weight: Weight = Field("bold", description=WEIGHT_HELP)
+    size: float = Field(0.035, gt=0, le=0.2, description="Font size as a fraction of the shorter canvas side")
+    color: Color = Field("#FFFFFF", description="Text color")
+    background: Color = Field("#F59E0B", description="Pill color")
+    padding: float = Field(0.6, ge=0, le=3, description="Horizontal padding as a multiple of the font size")
+    radius: float = Field(0.5, ge=0, le=0.5, description="Corner radius as a fraction of the badge height (0.5 = pill)")
+    gap: float = Field(0.02, ge=0, le=0.2, description="Space between badge and text, fraction of the shorter side")
+    uppercase: bool = Field(True, description="Show the badge text in capitals")
 
 
 class Shadow(_Model):
@@ -107,6 +150,7 @@ class Template(_Model):
     background: Background = Field(default_factory=lambda: Background(color="#ffffff"))
     caption: TextStyle = Field(default_factory=TextStyle)
     subtitle: SubtitleStyle = Field(default_factory=SubtitleStyle)
+    badge: BadgeStyle = Field(default_factory=BadgeStyle, description="Style of the optional badge, e.g. 'PRO'")
     caption_position: Literal["top", "bottom"] = "top"
     padding: float = Field(0.07, ge=0, le=0.4, description="Outer padding, fraction of the shorter side")
     gap: float = Field(0.045, ge=0, le=0.4, description="Space between text and screenshot")
@@ -176,7 +220,7 @@ def _absolutize(data: dict, base_dir: Path) -> dict:
                 frame["name"] = str(base_dir / name)
             else:
                 screenshot["frame"] = str(base_dir / name)
-    for key in ("caption", "subtitle"):
+    for key in ("caption", "subtitle", "badge"):
         style = data.get(key)
         # A bare font name may be an installed font, so only rewrite paths that exist here.
         if isinstance(style, dict) and isinstance(style.get("font"), str) and (base_dir / style["font"]).is_file():
