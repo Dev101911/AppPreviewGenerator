@@ -471,6 +471,21 @@ def locales_cmd(locale, store, as_json):
             click.echo(f"  {code:<8} {name}")
 
 
+@main.command(name="mcp")
+def mcp_cmd():
+    """Run an MCP server over stdio, exposing apppreview as tools for AI agents.
+
+    Needs the extra: pip install "apppreview[mcp]".
+    """
+    from apppreview.mcp_server import create_server
+
+    try:
+        server = create_server()
+    except AppPreviewError as exc:
+        fail(exc, False)
+    server.run("stdio")
+
+
 @main.command(name="schema")
 @click.argument("kind", type=click.Choice(["config", "template"]))
 def schema_cmd(kind):

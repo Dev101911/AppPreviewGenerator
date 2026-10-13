@@ -5,6 +5,10 @@ command: stdout then contains only one JSON document. Exit code `0` is success,
 `1` is a validation failure, `2` is a usage/input error with
 `{"ok": false, "error": {"code": ..., "message": ...}}`.
 
+Prefer tools over shelling out? Run the MCP server: `apppreview mcp` (needs
+`pip install "apppreview[mcp]"`). Its tools mirror the commands below and return the
+same JSON.
+
 ## Recipes
 
 **Find target IDs and their exact requirements**
