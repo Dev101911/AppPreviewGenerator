@@ -158,7 +158,7 @@ def get_target(target_id: str) -> Target:
         return targets[target_id]
     raise AppPreviewError(
         "unknown_target",
-        f"Unknown target '{target_id}'. Run `apppreview targets` to list valid IDs.",
+        f"Unknown target '{target_id}'. Run `app-preview targets` to list valid IDs.",
     )
 
 

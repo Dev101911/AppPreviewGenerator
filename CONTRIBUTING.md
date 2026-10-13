@@ -56,7 +56,7 @@ Releases go to PyPI from the **Release** workflow when a `v*` tag is pushed.
 
 **One-time setup** (repository owner):
 
-1. On PyPI, add a *pending trusted publisher* for the project `apppreview`
+1. On PyPI, add a *pending trusted publisher* for the project `app-preview`
    (Account settings → Publishing): owner `Dev101911`, repository `AppPreviewGenerator`,
    workflow `release.yml`, environment `pypi`. No API token is stored in the repo.
 2. In the GitHub repository settings, create an environment named `pypi`. Optionally

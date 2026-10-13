@@ -48,7 +48,7 @@ class FetchError(Exception):
 
 
 def fetch(url: str) -> str:
-    request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (apppreview spec check)"})
+    request = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0 (app-preview spec check)"})
     try:
         with urllib.request.urlopen(request, timeout=30) as response:
             return response.read().decode("utf-8", errors="replace")

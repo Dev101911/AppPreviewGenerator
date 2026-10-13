@@ -43,7 +43,7 @@ def generate_graphic(
     subtitle: str | None = None,
     icon: str | Path | None = None,
     template: str | Template = "clean",
-    out: str | Path = "apppreview-out",
+    out: str | Path = "app-preview-out",
     fmt: str | None = None,
     dry_run: bool = False,
     locale: str | None = None,

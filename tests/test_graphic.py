@@ -77,7 +77,7 @@ def test_config_graphics(tmp_path, icon):
             {"target": "google.tv-banner", "title": "My App"},
         ],
     }
-    path = tmp_path / "apppreview.yaml"
+    path = tmp_path / "app-preview.yaml"
     path.write_text(yaml.safe_dump(config))
     result = build(path)
     assert result.ok
@@ -87,7 +87,7 @@ def test_config_graphics(tmp_path, icon):
 
 
 def test_config_rejects_screenshot_target_as_graphic(tmp_path):
-    path = tmp_path / "apppreview.yaml"
+    path = tmp_path / "app-preview.yaml"
     path.write_text(yaml.safe_dump({"graphics": [{"target": "google.phone", "title": "x"}]}))
     with pytest.raises(AppPreviewError) as exc:
         build(path)
@@ -95,7 +95,7 @@ def test_config_rejects_screenshot_target_as_graphic(tmp_path):
 
 
 def test_config_needs_screens_or_graphics(tmp_path):
-    path = tmp_path / "apppreview.yaml"
+    path = tmp_path / "app-preview.yaml"
     path.write_text(yaml.safe_dump({"targets": ["google.phone"]}))
     with pytest.raises(AppPreviewError) as exc:
         build(path)

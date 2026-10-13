@@ -1,6 +1,6 @@
 # AppPreviewGenerator — Plan
 
-A CLI (`apppreview`) that turns raw app screenshots into App Store and Google Play
+A CLI (`app-preview`) that turns raw app screenshots into App Store and Google Play
 assets that pass store validation the first time, and that is just as easy for an
 AI agent to drive as for a developer.
 
@@ -27,9 +27,9 @@ AI agent to drive as for a developer.
 ## CLI (MVP)
 
 ```
-apppreview targets [--store apple|google] [--json]
-apppreview validate IMAGES... --target ID [--json]
-apppreview generate IMAGES... --target ID [--target ID ...] [--out DIR]
+app-preview targets [--store apple|google] [--json]
+app-preview validate IMAGES... --target ID [--json]
+app-preview generate IMAGES... --target ID [--target ID ...] [--out DIR]
                     [--mode fit|fill|stretch] [--background COLOR]
                     [--format png|jpeg] [--size WxH] [--json] [--dry-run]
 ```
@@ -47,7 +47,7 @@ Exit codes: `0` success / all valid, `1` validation failures, `2` usage or input
 6. Agent-friendly UX: `--json` everywhere, exit codes, `AGENTS.md`.
 
 ### M2 — Marketing-quality output
-- ✅ Declarative config file (`apppreview.yaml`) for batch runs across targets and locales (#10).
+- ✅ Declarative config file (`app-preview.yaml`) for batch runs across targets and locales (#10).
 - ✅ Templates: background colours/gradients, captions, fonts, layout (#11).
 - ✅ Device frames: built-in phone/tablet, custom PNG frames (#12). Video support comes with #21.
 - ✅ Localization: per-locale fonts, RTL and CJK layout, store locale codes (#13).

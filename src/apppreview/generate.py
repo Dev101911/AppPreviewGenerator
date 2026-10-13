@@ -249,7 +249,7 @@ def output_name(index: int, stem: str, fmt: str) -> str:
 def generate(
     inputs,
     targets,
-    out_dir: str | os.PathLike = "apppreview-out",
+    out_dir: str | os.PathLike = "app-preview-out",
     mode: str = "fit",
     background: str = "#ffffff",
     fmt: str | None = None,
@@ -270,7 +270,7 @@ def generate(
         raise AppPreviewError("no_inputs", "No input images given")
     resolved = [t if isinstance(t, Target) else get_target(t) for t in targets]
     if not resolved:
-        raise AppPreviewError("no_targets", "No targets given; pass --target (see `apppreview targets`)")
+        raise AppPreviewError("no_targets", "No targets given; pass --target (see `app-preview targets`)")
     if isinstance(size, str):
         size = parse_size(size)
     if template is not None and not isinstance(template, Template):
@@ -307,7 +307,7 @@ def generate(
             raise AppPreviewError(
                 "mixed_media",
                 "Videos go to preview targets (*-preview) and images to screenshot targets; run them separately. "
-                "To turn screenshots into a preview, use `apppreview slideshow`.",
+                "To turn screenshots into a preview, use `app-preview slideshow`.",
             )
         for target in resolved:
             target_outputs = []
@@ -388,7 +388,7 @@ def slideshow_timing(count: int, seconds: float | None, transition: float) -> tu
 def make_slideshow(
     images,
     targets,
-    out_dir: str | os.PathLike = "apppreview-out",
+    out_dir: str | os.PathLike = "app-preview-out",
     *,
     seconds: float | None = None,
     transition: float = 0.5,

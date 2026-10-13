@@ -35,7 +35,7 @@ USAGE_CODES = {
     "ambiguous_device": "Several simulators or devices are running; pass --device.",
     "background_unreadable": "A template's background image can't be read.",
     "capture_failed": "xcrun simctl or adb returned an error; the message includes its output.",
-    "config_not_found": "No apppreview.yaml at the given path. Run `apppreview init`.",
+    "config_not_found": "No app-preview.yaml at the given path. Run `app-preview init`.",
     "ffmpeg_failed": "ffmpeg returned an error while converting a video.",
     "file_exists": "init would overwrite an existing file; pass --force.",
     "font_not_found": "A template font path or name can't be loaded.",
@@ -44,7 +44,7 @@ USAGE_CODES = {
     "input_not_found": "Source files are missing. `build` lists every missing file at once.",
     "input_unreadable": "A source file exists but isn't a readable image.",
     "invalid_color": "A color isn't a name, #RRGGBB, #RRGGBBAA or `auto`.",
-    "invalid_config": "apppreview.yaml doesn't match the schema; the message lists each field.",
+    "invalid_config": "app-preview.yaml doesn't match the schema; the message lists each field.",
     "invalid_format": "The target doesn't accept the requested --format.",
     "invalid_frame": "A frame image has no enclosed transparent screen, or its manifest is malformed.",
     "invalid_layout": "Layout isn't default, fastlane or gpp.",
@@ -69,7 +69,7 @@ USAGE_CODES = {
     "too_many_images": "More inputs than the target allows (e.g. 10 for Apple, 8 for Google).",
     "tool_not_found": "A required tool is missing: ffmpeg, xcrun, adb, or the MCP extra.",
     "unknown_frame": "Not a built-in frame name or a .png/.yaml path.",
-    "unknown_target": "Not a target ID; see `apppreview targets`.",
+    "unknown_target": "Not a target ID; see `app-preview targets`.",
     "unknown_template": "Not a built-in template name or a .yaml/.json path.",
     "unreadable": "ffprobe can't read the video.",
     "unsupported_in_layout": "The upload tool for this layout has no folder for the target.",
@@ -100,36 +100,36 @@ ISSUE_CODES = {
 }
 
 EXAMPLES = {
-    "targets": ["apppreview targets --store apple", "apppreview targets apple.iphone-6.9 --json"],
+    "targets": ["app-preview targets --store apple", "app-preview targets apple.iphone-6.9 --json"],
     "validate": [
-        "apppreview validate shots/*.png -t apple.iphone-6.9",
-        "apppreview validate demo.mov -t apple.iphone-6.9-preview --json",
+        "app-preview validate shots/*.png -t apple.iphone-6.9",
+        "app-preview validate demo.mov -t apple.iphone-6.9-preview --json",
     ],
     "generate": [
-        "apppreview generate raw/*.png -t apple.iphone-6.9 -t apple.ipad-13 -t google.phone -o out",
-        'apppreview generate shot.png -t apple.iphone-6.9 --template dark --frame phone --caption "Plan your week"',
-        "apppreview generate demo.mov -t apple.iphone-6.9-preview --start 3",
+        "app-preview generate raw/*.png -t apple.iphone-6.9 -t apple.ipad-13 -t google.phone -o out",
+        'app-preview generate shot.png -t apple.iphone-6.9 --template dark --frame phone --caption "Plan your week"',
+        "app-preview generate demo.mov -t apple.iphone-6.9-preview --start 3",
     ],
-    "identify": ["apppreview identify shot.png --store google"],
+    "identify": ["app-preview identify shot.png --store google"],
     "build": [
-        "apppreview build",
-        "apppreview build -t apple.iphone-6.9 -l de-DE --dry-run --json",
-        "apppreview build --layout fastlane",
+        "app-preview build",
+        "app-preview build -t apple.iphone-6.9 -l de-DE --dry-run --json",
+        "app-preview build --layout fastlane",
     ],
-    "init": ["apppreview init", "apppreview init marketing/apppreview.yaml"],
+    "init": ["app-preview init", "app-preview init marketing/app-preview.yaml"],
     "graphic": [
-        'apppreview graphic -t google.feature-graphic --title "Weekly Planner" '
+        'app-preview graphic -t google.feature-graphic --title "Weekly Planner" '
         '--subtitle "Plan in seconds" --icon icon.png'
     ],
-    "slideshow": ["apppreview slideshow shots/*.png -t apple.iphone-6.9-preview --template clean --frame phone"],
-    "templates": ["apppreview templates", "apppreview templates sunset"],
-    "frames": ["apppreview frames --json"],
-    "locales": ["apppreview locales ja-JP", "apppreview locales --store google"],
-    "schema": ["apppreview schema config > apppreview.schema.json"],
-    "capture ios": ['apppreview capture ios -o shots/en-US/home.png --device "iPhone 17 Pro Max"'],
-    "capture android": ["apppreview capture android -o shots/en-US/home.png"],
-    "capture simulators": ["apppreview capture simulators"],
-    "mcp": ["claude mcp add apppreview -- apppreview mcp"],
+    "slideshow": ["app-preview slideshow shots/*.png -t apple.iphone-6.9-preview --template clean --frame phone"],
+    "templates": ["app-preview templates", "app-preview templates sunset"],
+    "frames": ["app-preview frames --json"],
+    "locales": ["app-preview locales ja-JP", "app-preview locales --store google"],
+    "schema": ["app-preview schema config > app-preview.schema.json"],
+    "capture ios": ['app-preview capture ios -o shots/en-US/home.png --device "iPhone 17 Pro Max"'],
+    "capture android": ["app-preview capture android -o shots/en-US/home.png"],
+    "capture simulators": ["app-preview capture simulators"],
+    "mcp": ["claude mcp add app-preview -- app-preview mcp"],
 }
 
 e = html.escape
@@ -194,7 +194,7 @@ def _default(param) -> str:
 def commands_html() -> str:
     parts = []
     for name, cmd in _commands():
-        ctx = click.Context(cmd, info_name=f"apppreview {name}")
+        ctx = click.Context(cmd, info_name=f"app-preview {name}")
         usage = cmd.get_usage(ctx).replace("Usage: ", "")
         help_text = (cmd.help or "").strip()
         paragraphs = "".join(f"<p>{inline_md(' '.join(p.split()))}</p>" for p in help_text.split("\n\n") if p.strip())
@@ -212,7 +212,7 @@ def commands_html() -> str:
             rows.append([names, _type(p), _default(p), inline_md(p.help or "")])
         examples = EXAMPLES.get(name, [])
         parts.append(
-            f'<section class="command" id="cmd-{slug(name)}"><h3>{code("apppreview " + name)}</h3>'
+            f'<section class="command" id="cmd-{slug(name)}"><h3>{code("app-preview " + name)}</h3>'
             f"{paragraphs}{pre([usage])}"
             + (table(["Option", "Type", "Default", "Description"], rows, "options") if rows else "")
             + (f'<p class="label">Examples</p>{pre(examples)}' if examples else "")

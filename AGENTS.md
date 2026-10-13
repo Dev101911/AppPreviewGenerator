@@ -1,20 +1,20 @@
-# Using apppreview as an AI agent
+# Using app-preview as an AI agent
 
-`apppreview` is non-interactive and safe to run unattended. Add `--json` to any
+`app-preview` is non-interactive and safe to run unattended. Add `--json` to any
 command: stdout then contains only one JSON document. Exit code `0` is success,
 `1` is a validation failure, `2` is a usage/input error with
 `{"ok": false, "error": {"code": ..., "message": ...}}`.
 
-Prefer tools over shelling out? Run the MCP server: `apppreview mcp` (needs
-`pip install "apppreview[mcp]"`). Its tools mirror the commands below and return the
+Prefer tools over shelling out? Run the MCP server: `app-preview mcp` (needs
+`pip install "app-preview[mcp]"`). Its tools mirror the commands below and return the
 same JSON.
 
 ## Recipes
 
 **Find target IDs and their exact requirements**
 ```bash
-apppreview targets --json                 # list of target specs
-apppreview targets apple.ipad-13 --json   # one spec
+app-preview targets --json                 # list of target specs
+app-preview targets apple.ipad-13 --json   # one spec
 ```
 
 **Minimum set for a typical iOS + Android app**
@@ -23,14 +23,14 @@ and `google.phone` (at least 2, ideally 4+ at ≥1080px for promotion).
 
 **Make screenshots compliant**
 ```bash
-apppreview generate raw/*.png -t apple.iphone-6.9 -t google.phone -o out --json
+app-preview generate raw/*.png -t apple.iphone-6.9 -t google.phone -o out --json
 ```
 Read `outputs[].path` for the written files and `ok` for the overall result. Check
 `outputs[].warnings` for upscaling or letterboxing that may need a better source image.
 
 **Check existing screenshots**
 ```bash
-apppreview validate out/apple.iphone-6.9/*.png -t apple.iphone-6.9 --json
+app-preview validate out/apple.iphone-6.9/*.png -t apple.iphone-6.9 --json
 ```
 Each entry in `files[].issues` and `set_issues` has a `severity` (`error`/`warning`),
 a stable `code`, a `message`, and often a `fix`.
@@ -38,14 +38,14 @@ a stable `code`, a `message`, and often a `fix`.
 **Plan without writing files**: add `--dry-run` to `generate` or `build`.
 
 **Capture from a simulator or emulator**
-`apppreview capture ios -o shots/home.png --json` (or `capture android`) returns `path`,
-`width`, `height` and `matches` (targets it fits as-is). `apppreview capture simulators --json`
+`app-preview capture ios -o shots/home.png --json` (or `capture android`) returns `path`,
+`width`, `height` and `matches` (targets it fits as-is). `app-preview capture simulators --json`
 maps Apple targets to simulator names to boot.
 
 **App preview videos** (needs ffmpeg)
-`apppreview generate demo.mov -t apple.iphone-6.9-preview --json` converts a recording;
+`app-preview generate demo.mov -t apple.iphone-6.9-preview --json` converts a recording;
 add `--start N` to choose the 30 s segment or `--extend` for clips under 15 s.
-`apppreview slideshow shots/*.png -t apple.iphone-6.9-preview --json` makes a preview from
+`app-preview slideshow shots/*.png -t apple.iphone-6.9-preview --json` makes a preview from
 screenshots. Video sources must go to `-preview` targets and images to the others
 (`mixed_media` error otherwise).
 
@@ -54,34 +54,34 @@ screenshots. Video sources must go to `-preview` targets and images to the other
 `warnings[]`.
 
 **Captioned marketing screenshots for a whole listing**
-1. `apppreview schema config` gives the JSON Schema for `apppreview.yaml`
-   (`apppreview schema template` for templates).
-2. Write `apppreview.yaml` (or start with `apppreview init`), with one entry in `screens`
+1. `app-preview schema config` gives the JSON Schema for `app-preview.yaml`
+   (`app-preview schema template` for templates).
+2. Write `app-preview.yaml` (or start with `app-preview init`), with one entry in `screens`
    per screenshot and captions keyed by locale.
-3. `apppreview build --dry-run --json` validates the config and lists every output. All
+3. `app-preview build --dry-run --json` validates the config and lists every output. All
    missing sources are reported in a single `input_not_found` error.
-4. `apppreview build --json` renders and validates. `validation[]` has one report per
+4. `app-preview build --json` renders and validates. `validation[]` has one report per
    locale × target.
 
 **One-off captioned screenshot**
 ```bash
-apppreview generate shot.png -t apple.iphone-6.9 --template sunset --caption "Plan your week" --json
+app-preview generate shot.png -t apple.iphone-6.9 --template sunset --caption "Plan your week" --json
 ```
 Pass `--caption` once per input image, in the same order.
-Add `--frame auto` (or `phone`, `tablet`, a frame `.png`) to show the screenshot inside a device; `apppreview frames --json` lists built-ins.
+Add `--frame auto` (or `phone`, `tablet`, a frame `.png`) to show the screenshot inside a device; `app-preview frames --json` lists built-ins.
 
 **Play feature graphic / TV banner**
 ```bash
-apppreview graphic -t google.feature-graphic --title "App Name" --subtitle "Tagline" --icon icon.png --json
+app-preview graphic -t google.feature-graphic --title "App Name" --subtitle "Tagline" --icon icon.png --json
 ```
-Or list them under `graphics:` in `apppreview.yaml`.
+Or list them under `graphics:` in `app-preview.yaml`.
 
 **Non-Latin languages**
 Check `outputs[].warnings` for "no glyphs": the font can't draw that text. Fix it by
 adding `locale_overrides: {<lang>: {caption: {font: <path>}, subtitle: {font: <path>}}}`
 to the config. `build` also returns `warnings[]` for locales a store doesn't support;
-`apppreview locales <code> --json` maps a locale to each store's code. Only targets with `"kind": "graphic"`
-in `apppreview targets --json` work here.
+`app-preview locales <code> --json` maps a locale to each store's code. Only targets with `"kind": "graphic"`
+in `app-preview targets --json` work here.
 
 ## Issue codes
 

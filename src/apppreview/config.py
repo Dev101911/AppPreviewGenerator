@@ -1,4 +1,4 @@
-"""Project config (apppreview.yaml): render every screen for every target and locale."""
+"""Project config (app-preview.yaml): render every screen for every target and locale."""
 
 from __future__ import annotations
 
@@ -29,7 +29,7 @@ from apppreview.template import Template, load_template
 from apppreview.validate import Report, validate_images
 from apppreview.video import is_video, produce_video
 
-DEFAULT_CONFIG = "apppreview.yaml"
+DEFAULT_CONFIG = "app-preview.yaml"
 STORE_NAMES = {"apple": "App Store", "google": "Google Play"}
 
 LocalizedText = str | dict[str, str]
@@ -68,8 +68,8 @@ class Config(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     version: Literal[1] = 1
-    out: str = Field("apppreview-out", description="Output directory, relative to the config file")
-    targets: list[str] = Field(default_factory=list, description="Screenshot target IDs; see `apppreview targets`")
+    out: str = Field("app-preview-out", description="Output directory, relative to the config file")
+    targets: list[str] = Field(default_factory=list, description="Screenshot target IDs; see `app-preview targets`")
     locales: list[str] = Field(default_factory=list, description="Locale codes, e.g. en-US; empty for a single set")
     template: str | dict | None = Field(
         None, description="Built-in template name, path to a template file, or inline template. Omit for plain resize."
@@ -118,7 +118,7 @@ def load_config(path: str | Path) -> tuple[Config, Path]:
         path = path / DEFAULT_CONFIG
     if not path.is_file():
         raise AppPreviewError(
-            "config_not_found", f"Config file not found: {path}. Run `apppreview init` to create one."
+            "config_not_found", f"Config file not found: {path}. Run `app-preview init` to create one."
         )
     text = path.read_text("utf-8")
     try:
@@ -197,7 +197,7 @@ def locale_warnings(config: Config, stores: set[str]) -> list[str]:
         for store in sorted(stores):
             if store_locale(store, locale) is None:
                 warnings.append(
-                    f"Locale '{locale}' is not a {STORE_NAMES[store]} locale; see `apppreview locales --store {store}`"
+                    f"Locale '{locale}' is not a {STORE_NAMES[store]} locale; see `app-preview locales --store {store}`"
                 )
     return warnings
 
@@ -406,8 +406,8 @@ def build(
 
 
 STARTER_CONFIG = """\
-# apppreview project config. Run `apppreview build` to render everything.
-# Schema: `apppreview schema config`. Targets: `apppreview targets`.
+# app-preview project config. Run `app-preview build` to render everything.
+# Schema: `app-preview schema config`. Targets: `app-preview targets`.
 version: 1
 out: store-screenshots
 

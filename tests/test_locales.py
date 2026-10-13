@@ -81,7 +81,7 @@ def test_locale_overrides_and_warnings(tmp_path):
         "locale_overrides": {"ja": {"caption": {"font": regular}}},
         "screens": [{"id": "home", "source": "home.png", "caption": "Hello"}],
     }
-    path = tmp_path / "apppreview.yaml"
+    path = tmp_path / "app-preview.yaml"
     path.write_text(yaml.safe_dump(config))
     jobs, warnings = plan(*load_config(path))
     fonts = {job.locale: job.template.caption.font for job in jobs}

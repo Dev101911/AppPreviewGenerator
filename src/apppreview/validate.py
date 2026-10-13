@@ -90,7 +90,7 @@ def has_alpha_channel(img: Image.Image) -> bool:
 
 
 def _generate_hint(path: Path, target: Target) -> str:
-    return f"Run `apppreview generate {path} --target {target.id}` to produce a compliant copy."
+    return f"Run `app-preview generate {path} --target {target.id}` to produce a compliant copy."
 
 
 def validate_file(path: str | os.PathLike, target: Target) -> FileReport:

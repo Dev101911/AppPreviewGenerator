@@ -20,7 +20,7 @@ from apppreview.validate import ERROR, WARNING, FileReport, Issue
 
 VIDEO_EXTENSIONS = {".mp4", ".mov", ".m4v"}
 # Encoding speed/quality trade-off; tests use "ultrafast".
-X264_PRESET = os.environ.get("APPPREVIEW_X264_PRESET", "medium")
+X264_PRESET = os.environ.get("APP_PREVIEW_X264_PRESET", "medium")
 # H.264 Level 4.0 limits: 8192 macroblocks per frame, 245760 per second.
 LEVEL_40_MAX_MBS = 8192
 
@@ -119,7 +119,7 @@ def validate_video(path: str | Path, target: Target) -> FileReport:
     report.format = path.suffix.lower().lstrip(".")
     report.mode = info.codec
     rules = video_rules()
-    hint = f"Run `apppreview generate {path} --target {target.id}` to produce a compliant copy."
+    hint = f"Run `app-preview generate {path} --target {target.id}` to produce a compliant copy."
     add = report.issues.append
 
     if report.format not in target.formats:
@@ -156,10 +156,11 @@ def validate_video(path: str | Path, target: Target) -> FileReport:
         add(Issue(ERROR, "dimensions", f"{info.width}x{info.height} is not accepted; expected one of {expected}", hint))
     if info.duration < rules["min_seconds"] - 0.05:
         add(Issue(ERROR, "duration", f"Video is {info.duration:.1f}s; minimum is {rules['min_seconds']}s",
-                  "Record a longer clip, or `apppreview generate ... --extend` to hold the last frame."))  # fmt: skip
+                  "Record a longer clip, or `app-preview generate ... --extend` to hold the last frame."))  # fmt: skip
     if info.duration > rules["max_seconds"] + 0.05:
         add(Issue(ERROR, "duration", f"Video is {info.duration:.1f}s; maximum is {rules['max_seconds']}s",
-                  f"`apppreview generate ... --start SECONDS` trims to the best {rules['max_seconds']}s."))  # fmt: skip
+                  "`app-preview generate ... --start SECONDS` trims it, "
+                  f"keeping {rules['max_seconds']}s from that point."))  # fmt: skip
     if info.fps > rules["max_fps"] + 0.01:
         add(Issue(ERROR, "frame_rate", f"Frame rate is {info.fps:.2f} fps; maximum is {rules['max_fps']}", hint))
 

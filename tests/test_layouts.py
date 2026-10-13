@@ -80,7 +80,7 @@ def project(tmp_path):
         "screens": [{"id": "home", "source": "home.png"}],
         "graphics": [{"target": "google.feature-graphic", "title": "App"}],
     }
-    path = tmp_path / "apppreview.yaml"
+    path = tmp_path / "app-preview.yaml"
     path.write_text(yaml.safe_dump(config))
     return path
 

@@ -1,4 +1,4 @@
-"""Turn an apppreview --json result into a Markdown job summary (used by action.yml)."""
+"""Turn an app-preview --json result into a Markdown job summary (used by action.yml)."""
 
 import json
 import sys
@@ -8,13 +8,13 @@ def main(path: str, args: str) -> None:
     try:
         data = json.load(open(path, encoding="utf-8"))
     except (OSError, ValueError):
-        print(f"### apppreview `{args}`\n\nNo JSON result was produced.")
+        print(f"### app-preview `{args}`\n\nNo JSON result was produced.")
         return
     if not isinstance(data, dict):
-        print(f"### apppreview `{args}`\n\n{len(data)} item(s) returned.")
+        print(f"### app-preview `{args}`\n\n{len(data)} item(s) returned.")
         return
     status = "✅ passed" if data.get("ok", True) else "❌ failed"
-    print(f"### apppreview `{args}`: {status}\n")
+    print(f"### app-preview `{args}`: {status}\n")
     if "error" in data:
         print(f"**{data['error']['code']}**: {data['error']['message']}")
         return
