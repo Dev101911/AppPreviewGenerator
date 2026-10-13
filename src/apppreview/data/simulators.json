@@ -1,0 +1,32 @@
+{
+  "note": "Portrait screenshot sizes of common iOS simulators. Captures are always checked with `identify`, so a wrong entry here only affects suggestions.",
+  "updated": "2026-10-13",
+  "devices": [
+    {"name": "iPhone 17 Pro Max", "size": [1320, 2868]},
+    {"name": "iPhone 16 Pro Max", "size": [1320, 2868]},
+    {"name": "iPhone Air", "size": [1260, 2736]},
+    {"name": "iPhone 16 Plus", "size": [1290, 2796]},
+    {"name": "iPhone 15 Pro Max", "size": [1290, 2796]},
+    {"name": "iPhone 11 Pro Max", "size": [1242, 2688]},
+    {"name": "iPhone 17 Pro", "size": [1206, 2622]},
+    {"name": "iPhone 17", "size": [1206, 2622]},
+    {"name": "iPhone 16 Pro", "size": [1206, 2622]},
+    {"name": "iPhone 16", "size": [1179, 2556]},
+    {"name": "iPhone 15", "size": [1179, 2556]},
+    {"name": "iPhone 16e", "size": [1170, 2532]},
+    {"name": "iPhone 14", "size": [1170, 2532]},
+    {"name": "iPhone 8 Plus", "size": [1242, 2208]},
+    {"name": "iPhone SE (3rd generation)", "size": [750, 1334]},
+    {"name": "iPad Pro 13-inch (M5)", "size": [2064, 2752]},
+    {"name": "iPad Pro 13-inch (M4)", "size": [2064, 2752]},
+    {"name": "iPad Air 13-inch (M3)", "size": [2048, 2732]},
+    {"name": "iPad Pro 11-inch (M5)", "size": [1668, 2420]},
+    {"name": "iPad Pro 11-inch (M4)", "size": [1668, 2420]},
+    {"name": "iPad Air 11-inch (M3)", "size": [1640, 2360]},
+    {"name": "iPad (A16)", "size": [1640, 2360]},
+    {"name": "iPad mini (A17 Pro)", "size": [1488, 2266]},
+    {"name": "Apple Watch Ultra 3 (49mm)", "size": [422, 514]},
+    {"name": "Apple Watch Series 11 (46mm)", "size": [416, 496]},
+    {"name": "Apple TV 4K (3rd generation)", "size": [3840, 2160]}
+  ]
+}

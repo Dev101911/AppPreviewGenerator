@@ -50,6 +50,24 @@ apppreview generate shot.png -t apple.iphone-6.9 --template dark --caption "Plan
 | `--template` | Place screenshots on a styled template (see below) |
 | `--caption`, `--subtitle` | Text per image, in input order (implies the `clean` template) |
 
+## Capturing screenshots
+
+Take screenshots straight from a booted iOS Simulator (macOS with Xcode) or an Android
+emulator or device (adb). The status bar is cleaned up first: 9:41, full battery and
+signal, no notifications.
+
+```bash
+apppreview capture simulators                       # which simulator fits which Apple target
+apppreview capture ios -o shots/en-US/home.png      # --device "iPhone 17 Pro Max" if several are booted
+apppreview capture android -o shots/en-US/home.png  # --device emulator-5554 if several are connected
+```
+
+Each capture reports which targets it already fits. Modern Android phones are taller than
+Google Play's 2:1 limit, so run Android captures through `generate` or a template.
+The status bar overrides stay on for consistent follow-up shots. Reset them with
+`xcrun simctl status_bar booted clear` or
+`adb shell am broadcast -a com.android.systemui.demo -e command exit`.
+
 ## Templates
 
 ![Built-in templates: clean, dark, sunset, minimal](docs/images/templates.png)

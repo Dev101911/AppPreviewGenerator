@@ -33,6 +33,11 @@ a stable `code`, a `message`, and often a `fix`.
 
 **Plan without writing files**: add `--dry-run` to `generate` or `build`.
 
+**Capture from a simulator or emulator**
+`apppreview capture ios -o shots/home.png --json` (or `capture android`) returns `path`,
+`width`, `height` and `matches` (targets it fits as-is). `apppreview capture simulators --json`
+maps Apple targets to simulator names to boot.
+
 **Ready-to-upload folders**: add `--layout fastlane` (deliver + supply) or `--layout gpp`
 (Gradle Play Publisher) to `build`, `generate` or `graphic`. Skipped targets appear in
 `warnings[]`.
@@ -92,4 +97,5 @@ Common ones: `unknown_target`, `unknown_template`, `invalid_template`, `invalid_
 `missing_source`, `template_not_allowed` (target forbids captions/backgrounds),
 `too_many_images`, `invalid_size`, `invalid_format`, `text_count_mismatch`,
 `not_a_graphic_target`, `nothing_to_build`, `unknown_frame`, `invalid_frame`, `frame_not_found`,
-`frame_not_allowed`, `invalid_layout`, `unsupported_in_layout`.
+`frame_not_allowed`, `invalid_layout`, `unsupported_in_layout`, `tool_not_found`, `no_device`, `ambiguous_device`,
+`capture_failed`.

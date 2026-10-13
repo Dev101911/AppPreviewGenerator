@@ -13,6 +13,7 @@ import click
 import yaml
 
 from apppreview import __version__
+from apppreview.capture import capture_android, capture_ios, suggest_simulators
 from apppreview.config import DEFAULT_CONFIG, STARTER_CONFIG, build, config_schema, template_schema
 from apppreview.errors import AppPreviewError
 from apppreview.frames import BUILTIN_FRAMES
@@ -321,6 +322,64 @@ def templates_cmd(name, as_json):
         return
     for t in templates.values():
         click.echo(f"{t.name:<10} {t.description}")
+
+
+@main.group(name="capture")
+def capture_group():
+    """Take screenshots from a booted iOS Simulator or Android emulator/device."""
+
+
+def _report_capture(result, as_json):
+    if as_json:
+        emit_json(result.to_dict())
+        return
+    click.echo(f"Captured {result.path} from {result.device} ({result.width}x{result.height})")
+    click.echo(
+        f"Fits as-is: {', '.join(result.matches) if result.matches else 'no targets; run `apppreview generate`'}"
+    )
+
+
+@capture_group.command(name="ios")
+@click.option("-o", "--out", required=True, type=click.Path(), help="PNG file to write.")
+@click.option("--device", help="Simulator name or UDID, if more than one is booted.")
+@click.option("--no-status-bar", is_flag=True, help="Leave the status bar as is (default: 9:41, full bars).")
+@json_option
+def capture_ios_cmd(out, device, no_status_bar, as_json):
+    """Screenshot a booted iOS Simulator (needs Xcode). The status bar override stays until
+    `xcrun simctl status_bar booted clear`."""
+    try:
+        result = capture_ios(out, device, clean_status_bar=not no_status_bar)
+    except AppPreviewError as exc:
+        fail(exc, as_json)
+    _report_capture(result, as_json)
+
+
+@capture_group.command(name="android")
+@click.option("-o", "--out", required=True, type=click.Path(), help="PNG file to write.")
+@click.option("--device", help="adb serial, if more than one device is connected.")
+@click.option("--no-demo-mode", is_flag=True, help="Leave the status bar as is (default: demo mode, 09:41).")
+@json_option
+def capture_android_cmd(out, device, no_demo_mode, as_json):
+    """Screenshot an Android emulator or device over adb. Demo mode stays on until
+    `adb shell am broadcast -a com.android.systemui.demo -e command exit`."""
+    try:
+        result = capture_android(out, device, demo_mode=not no_demo_mode)
+    except AppPreviewError as exc:
+        fail(exc, as_json)
+    _report_capture(result, as_json)
+
+
+@capture_group.command(name="simulators")
+@json_option
+def capture_simulators_cmd(as_json):
+    """Which iOS simulators produce screenshots that fit each Apple target without resizing."""
+    suggestions = suggest_simulators()
+    if as_json:
+        emit_json(suggestions)
+        return
+    width = max(len(t) for t in suggestions)
+    for target_id, names in suggestions.items():
+        click.echo(f"{target_id:<{width}}  {', '.join(names)}")
 
 
 @main.command(name="frames")
