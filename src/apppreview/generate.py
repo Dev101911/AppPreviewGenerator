@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import tempfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -11,9 +12,10 @@ from PIL import Image, ImageColor, ImageOps, ImageStat, UnidentifiedImageError
 from apppreview.compose import compose
 from apppreview.errors import AppPreviewError
 from apppreview.layouts import check_layout, layout_path, unsupported_reason
-from apppreview.specs import Size, Target, format_sizes, get_target, size_problems
+from apppreview.specs import Size, Target, format_sizes, get_target, size_problems, video_rules
 from apppreview.template import Template, load_template
 from apppreview.validate import Report, validate_images
+from apppreview.video import is_video, produce_video, slideshow, video_extension
 
 MODES = ("fit", "fill", "stretch")
 UPSCALE_WARNING = 1.5
@@ -259,6 +261,8 @@ def generate(
     locale: str | None = None,
     frame: str | None = None,
     layout: str = "default",
+    start: float = 0.0,
+    extend: bool = False,
 ) -> GenerateResult:
     if mode not in MODES:
         raise AppPreviewError("invalid_mode", f"Invalid mode '{mode}'; use one of {', '.join(MODES)}")
@@ -292,10 +296,46 @@ def generate(
             target, len(inputs), fmt, size, template is not None, bool(template and template.screenshot.frame)
         )
 
-    sources = [(Path(path), load_source(path)) for path in inputs]
     out_dir = Path(out_dir)
     outputs: list[Output] = []
     reports: list[Report] = []
+
+    videos = [is_video(path) for path in inputs]
+    video_targets = [t.kind == "video" for t in resolved]
+    if any(videos) or any(video_targets):
+        if not (all(videos) and all(video_targets)):
+            raise AppPreviewError(
+                "mixed_media",
+                "Videos go to preview targets (*-preview) and images to screenshot targets; run them separately. "
+                "To turn screenshots into a preview, use `apppreview slideshow`.",
+            )
+        for target in resolved:
+            target_outputs = []
+            for index, path in enumerate(map(Path, inputs), start=1):
+                stem = layout_path(layout, out_dir, target, locale, f"{index:02d}_{path.stem}.mp4").with_suffix("")
+                dest, out_size, container, scale, warnings = produce_video(
+                    path,
+                    target,
+                    stem,
+                    size=size,
+                    mode=mode,
+                    background=background,
+                    template=template,
+                    caption=captions[index - 1] if captions else None,
+                    subtitle=subtitles[index - 1] if subtitles else None,
+                    locale=locale,
+                    start=start,
+                    extend=extend,
+                    dry_run=dry_run,
+                )
+                output = Output(str(path), target.id, str(dest), *out_size, container, scale, warnings)
+                outputs.append(output)
+                target_outputs.append(output)
+            if not dry_run:
+                reports.append(validate_images([o.path for o in target_outputs], target))
+        return GenerateResult(outputs=outputs, reports=reports, dry_run=dry_run, out_dir=str(out_dir))
+
+    sources = [(Path(path), load_source(path)) for path in inputs]
     for target in resolved:
         target_outputs = []
         for index, (path, img) in enumerate(sources, start=1):
@@ -321,4 +361,88 @@ def generate(
         if not dry_run:
             reports.append(validate_images([o.path for o in target_outputs], target))
 
+    return GenerateResult(outputs=outputs, reports=reports, dry_run=dry_run, out_dir=str(out_dir))
+
+
+def slideshow_timing(count: int, seconds: float | None, transition: float) -> tuple[float, float]:
+    """(seconds per slide, total length) so the preview lands within the 15-30s limits."""
+    rules = video_rules()
+    lo, hi = rules["min_seconds"], rules["max_seconds"]
+    if transition < 0:
+        raise AppPreviewError("invalid_option", "--transition can't be negative")
+    if seconds is None:
+        total = min(hi, max(lo, 4.0 * count))
+        seconds = (total + (count - 1) * transition) / count
+    if seconds <= transition:
+        raise AppPreviewError("invalid_option", "--seconds must be longer than --transition")
+    total = count * seconds - (count - 1) * transition
+    if not lo <= total <= hi:
+        raise AppPreviewError(
+            "invalid_option",
+            f"{count} slides x {seconds:g}s gives {total:.1f}s; previews must be {lo}-{hi}s. "
+            "Change --seconds or leave it out to fit automatically.",
+        )
+    return seconds, total
+
+
+def make_slideshow(
+    images,
+    targets,
+    out_dir: str | os.PathLike = "apppreview-out",
+    *,
+    seconds: float | None = None,
+    transition: float = 0.5,
+    template: str | Template | None = None,
+    captions: list[str] | None = None,
+    frame: str | None = None,
+    locale: str | None = None,
+    layout: str = "default",
+    dry_run: bool = False,
+) -> GenerateResult:
+    """Render each image for the preview size (plain fit or template) and join them into a video."""
+    if not images:
+        raise AppPreviewError("no_inputs", "No input images given")
+    resolved = [t if isinstance(t, Target) else get_target(t) for t in targets]
+    for target in resolved:
+        if target.kind != "video":
+            raise AppPreviewError("not_a_video_target", f"{target.id} is not a preview target; use a *-preview target")
+    if captions and len(captions) != len(images):
+        raise AppPreviewError("text_count_mismatch", f"{len(captions)} captions given for {len(images)} images")
+    if template is not None and not isinstance(template, Template):
+        template = load_template(template)
+    if (captions or frame) and template is None:
+        template = load_template("clean")
+    if frame:
+        template = load_template(template, {"screenshot": {"frame": frame}})
+    seconds, total = slideshow_timing(len(images), seconds, transition)
+    check_layout(layout)
+    sources = [load_source(path) for path in images]
+
+    out_dir = Path(out_dir)
+    outputs, reports = [], []
+    for target in resolved:
+        w0, h0 = ImageOps.exif_transpose(sources[0]).size
+        size = choose_size(target, w0, h0)
+        name = Path(images[0]).stem if len(images) == 1 else "slideshow"
+        dest = layout_path(layout, out_dir, target, locale, f"01_{name}.mp4").with_suffix("." + video_extension(size))
+        warnings: list[str] = []
+        if not dry_run:
+            with tempfile.TemporaryDirectory() as tmp:
+                slides = []
+                for i, img in enumerate(sources):
+                    if template:
+                        rendered, _, slide_warnings = compose(
+                            img, size, template, captions[i] if captions else None, None, locale
+                        )
+                    else:
+                        rendered, _ = render(img, size, "fit", resolve_background("auto", img), False)
+                        slide_warnings = []
+                    warnings += slide_warnings
+                    path = Path(tmp) / f"slide{i:02d}.png"
+                    rendered.convert("RGB").save(path)
+                    slides.append(path)
+                slideshow(slides, dest, size, seconds, transition)
+            reports.append(validate_images([dest], target))
+        output = Output(", ".join(map(str, images)), target.id, str(dest), *size, dest.suffix[1:], None, warnings)
+        outputs.append(output)
     return GenerateResult(outputs=outputs, reports=reports, dry_run=dry_run, out_dir=str(out_dir))

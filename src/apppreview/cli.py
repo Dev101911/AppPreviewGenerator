@@ -17,7 +17,7 @@ from apppreview.capture import capture_android, capture_ios, suggest_simulators
 from apppreview.config import DEFAULT_CONFIG, STARTER_CONFIG, build, config_schema, template_schema
 from apppreview.errors import AppPreviewError
 from apppreview.frames import BUILTIN_FRAMES
-from apppreview.generate import MODES, generate
+from apppreview.generate import MODES, generate, make_slideshow
 from apppreview.graphic import generate_graphic
 from apppreview.locales import is_rtl, store_locale, store_locales
 from apppreview.specs import STORES, format_sizes, get_target, load_targets
@@ -173,6 +173,8 @@ def _badge(severity: str) -> str:
 @click.option("--subtitle", "subtitles", multiple=True, help="Subtitle per image, in order.")
 @click.option("--locale", help="Language of the captions (e.g. ar, ja-JP), for text direction and shaping.")
 @click.option("--frame", help="Device frame: auto, phone, tablet, or a frame .png/.yaml path. Implies a template.")
+@click.option("--start", type=float, default=0.0, help="Videos: start time in seconds (output is at most 30s).")
+@click.option("--extend", is_flag=True, help="Videos: hold the last frame to reach the 15s minimum.")
 @click.option(
     "--layout",
     type=click.Choice(["default", "fastlane", "gpp"]),
@@ -193,6 +195,8 @@ def generate_cmd(
     subtitles,
     locale,
     frame,
+    start,
+    extend,
     layout,
     as_json,
 ):
@@ -217,6 +221,50 @@ def generate_cmd(
             locale=locale,
             frame=frame,
             layout=layout or "default",
+            start=start,
+            extend=extend,
+        )
+    except AppPreviewError as exc:
+        fail(exc, as_json)
+    _report_outputs(result, dry_run, as_json)
+
+
+@main.command(name="slideshow")
+@click.argument("images", nargs=-1, required=True, type=click.Path())
+@click.option(
+    "-t", "--target", "target_ids", multiple=True, required=True, help="Preview target, e.g. apple.iphone-6.9-preview."
+)
+@click.option("-o", "--out", "out_dir", default="apppreview-out", show_default=True, help="Output directory.")
+@click.option("--seconds", type=float, help="Seconds per slide [default: fit the total into 15-30s].")
+@click.option("--transition", type=float, default=0.5, show_default=True, help="Crossfade length in seconds.")
+@click.option("--template", help="Template for every slide.")
+@click.option("--caption", "captions", multiple=True, help="Caption per image, in order. Implies a template.")
+@click.option("--frame", help="Device frame for every slide. Implies a template.")
+@click.option("--locale", help="Language of the captions.")
+@click.option(
+    "--layout",
+    type=click.Choice(["default", "fastlane", "gpp"]),
+    help="Folder layout: default, fastlane or gpp.",
+)
+@click.option("--dry-run", is_flag=True, help="Report what would be written without writing files.")
+@json_option
+def slideshow_cmd(
+    images, target_ids, out_dir, seconds, transition, template, captions, frame, locale, layout, dry_run, as_json
+):
+    """Turn screenshots into an app preview video with crossfades (silent audio)."""
+    try:
+        result = make_slideshow(
+            images,
+            target_ids,
+            out_dir,
+            seconds=seconds,
+            transition=transition,
+            template=template,
+            captions=list(captions) or None,
+            frame=frame,
+            locale=locale,
+            layout=layout or "default",
+            dry_run=dry_run,
         )
     except AppPreviewError as exc:
         fail(exc, as_json)

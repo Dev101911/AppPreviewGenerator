@@ -42,6 +42,7 @@ class Target:
     uniform_size: bool = False
     frames_allowed: bool = True
     templates_allowed: bool = True  # captions/backgrounds may be added
+    preview_type: str | None = None  # App Store Connect preview type, for video targets
     required: str | None = None
     fallback: str | None = None
     notes: tuple[str, ...] = ()
@@ -130,10 +131,11 @@ def _build_target(raw: dict, defaults: dict, store: dict) -> Target:
         uniform_size=spec.get("uniform_size", False),
         frames_allowed=spec.get("frames_allowed", True),
         templates_allowed=spec.get("templates_allowed", True),
+        preview_type=spec.get("preview_type"),
         required=spec.get("required"),
         fallback=spec.get("fallback"),
         notes=tuple(spec.get("notes", ())),
-        source=store["source"],
+        source=store.get("preview_source", store["source"]) if spec.get("kind") == "video" else store["source"],
         verified=store["verified"],
     )
 
@@ -158,3 +160,9 @@ def get_target(target_id: str) -> Target:
         "unknown_target",
         f"Unknown target '{target_id}'. Run `apppreview targets` to list valid IDs.",
     )
+
+
+@cache
+def video_rules() -> dict:
+    text = (resources.files("apppreview") / "data" / "apple.json").read_text("utf-8")
+    return json.loads(text)["video_rules"]

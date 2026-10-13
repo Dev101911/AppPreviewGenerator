@@ -16,6 +16,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
+      - name: Install ffmpeg (video tests)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
       - run: pip install -e ".[dev]"
       - run: ruff check .
       - run: ruff format --check .

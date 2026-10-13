@@ -18,6 +18,11 @@ def apple_page(sizes=APPLE_SIZES, extra=""):
     return f"<html><main><h1>Screenshot specifications</h1><table>{rows}</table>{extra}</main></html>"
 
 
+def apple_previews_page():
+    sizes = {s for t in load_targets().values() if t.kind == "video" for s in t.sizes}
+    return "<main>" + "".join(f"<td>{w} x {h}</td>" for w, h in sorted(sizes)) + "</main>"
+
+
 def google_article(body):
     return f'<div class="article-content-container">{body}</div><div class="article-survey-container"></div>'
 
@@ -37,6 +42,7 @@ def google_locales_page(codes):
 def fake_fetcher(apple=None, google=None, apple_codes=None, google_codes=None):
     pages = {
         speccheck.APPLE_SCREENSHOTS: apple or apple_page(),
+        speccheck.APPLE_PREVIEWS: apple_previews_page(),
         speccheck.GOOGLE_SCREENSHOTS: google or google_article("<p>Up to 8 screenshots</p>"),
         speccheck.APPLE_LOCALES: apple_locales_json(apple_codes or list(store_locales()["apple"])),
         speccheck.GOOGLE_LOCALES: google_locales_page(google_codes or list(store_locales()["google"])),
@@ -79,4 +85,8 @@ def test_layout_change_is_an_error():
 
 
 def test_bundled_fingerprints_cover_every_page():
-    assert set(speccheck._data("spec_fingerprints.json")) == {"apple_screenshots", "google_screenshots"}
+    assert set(speccheck._data("spec_fingerprints.json")) == {
+        "apple_screenshots",
+        "apple_previews",
+        "google_screenshots",
+    }

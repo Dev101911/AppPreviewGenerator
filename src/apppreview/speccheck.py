@@ -4,6 +4,7 @@ Run `python -m apppreview.speccheck` (or the scheduled `spec-check` workflow). I
 the official pages and compares them with the bundled data:
 
 - Apple screenshot sizes: every WxH on the page must be a known size and vice versa.
+- Apple app preview sizes: every accepted preview size must still be on the page.
 - Apple and Google locale codes: the published lists must match data/locales.json.
 - Google screenshot rules and both pages' wording: the article text is hashed and compared
   with data/spec_fingerprints.json, so any edit (e.g. a new count limit) is flagged.
@@ -31,6 +32,9 @@ APPLE_SCREENSHOTS = (
 APPLE_LOCALES = (
     "https://developer.apple.com/tutorials/data/documentation/appstoreconnectapi/"
     "managing-metadata-in-your-app-by-using-locale-shortcodes.json"
+)
+APPLE_PREVIEWS = (
+    "https://developer.apple.com/help/app-store-connect/reference/app-information/app-preview-specifications"
 )
 GOOGLE_SCREENSHOTS = "https://support.google.com/googleplay/android-developer/answer/9866151?hl=en"
 GOOGLE_LOCALES = "https://support.google.com/googleplay/android-developer/answer/9844778?hl=en"
@@ -95,6 +99,16 @@ def check_apple_screenshots(document: str, report: Report) -> None:
         report.changes.append(f"Apple no longer lists {w}x{h} (still in data/apple.json)")
 
 
+def check_apple_previews(document: str, report: Report) -> None:
+    text = page_text(document, "<main", "</main>")
+    report.fingerprints["apple_previews"] = fingerprint(text)
+    # The page also lists device resolutions, so only check that our accepted sizes are still there.
+    page = {(int(w), int(h)) for w, h in DIMENSION.findall(text)}
+    ours = {tuple(s) for t in _data("apple.json")["targets"] if t.get("kind") == "video" for s in t["sizes"]}
+    for w, h in sorted(ours - page):
+        report.changes.append(f"Apple no longer lists the app preview size {w}x{h} (still in data/apple.json)")
+
+
 def check_google_screenshots(document: str, report: Report) -> None:
     text = page_text(document, 'class="article-content-container"', 'class="article-survey-container"')
     report.fingerprints["google_screenshots"] = fingerprint(text)
@@ -140,6 +154,7 @@ def _compare_locales(store: str, page: set[str], ours: set[str], report: Report)
 
 CHECKS = [
     (APPLE_SCREENSHOTS, check_apple_screenshots),
+    (APPLE_PREVIEWS, check_apple_previews),
     (GOOGLE_SCREENSHOTS, check_google_screenshots),
     (APPLE_LOCALES, check_apple_locales),
     (GOOGLE_LOCALES, check_google_locales),

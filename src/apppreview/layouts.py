@@ -80,6 +80,9 @@ def layout_path(
         return (out_root / locale / target.id if locale else out_root / target.id) / filename
 
     store_code = store_locale(target.store, locale or default_locale) or locale or default_locale
+    if target.kind == "video":
+        # deliver reads the preview type from the file name and orders by name.
+        return out_root / "fastlane" / "app_previews" / store_code / f"{target.preview_type}_{filename}"
     if target.store == "apple":
         # All devices share one folder per locale, so prefix with the target to keep names
         # unique and grouped; deliver sorts by name within each device.
