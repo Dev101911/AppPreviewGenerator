@@ -156,7 +156,7 @@ def text_warnings(blocks: list[TextBlock]) -> list[str]:
         sample = "".join(missing[:8])
         warnings.append(
             f"The font has no glyphs for {len(missing)} character(s) ({sample}); they render as boxes. "
-            "Set a font that covers this language, e.g. with locale_overrides in apppreview.yaml"
+            "Set a font that covers this language, e.g. with locale_overrides in app-preview.yaml"
         )
     return warnings
 

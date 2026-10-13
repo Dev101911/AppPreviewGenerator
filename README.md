@@ -2,19 +2,19 @@
 
 📖 **[Documentation](https://dev101911.github.io/AppPreviewGenerator/)**
 
-`apppreview` is a CLI that turns raw app screenshots into **App Store and Google Play
+`app-preview` is a CLI that turns raw app screenshots into **App Store and Google Play
 screenshots that pass store validation**. It is built for developers and AI agents
 alike: every command has `--json` output and predictable exit codes.
 
 ## Install
 
 ```bash
-pipx install apppreview                 # or: uv tool install apppreview
-uvx apppreview --help                   # run without installing
-pipx install "apppreview[mcp]"          # with the MCP server for AI agents
+pipx install app-preview                 # or: uv tool install app-preview
+uvx app-preview --help                   # run without installing
+pipx install "app-preview[mcp]"          # with the MCP server for AI agents
 ```
 
-- **Homebrew:** `brew install pipx && pipx install apppreview`. A tap formula is prepared
+- **Homebrew:** `brew install pipx && pipx install app-preview`. A tap formula is prepared
   in [`packaging/homebrew`](packaging/homebrew).
 - **From source:** `pipx install git+https://github.com/Dev101911/AppPreviewGenerator`.
 - **Requirements:** Python 3.10+. Video features need `ffmpeg`; capture needs Xcode (iOS)
@@ -27,7 +27,7 @@ Validate or build store assets in CI:
 ```yaml
 - uses: Dev101911/AppPreviewGenerator@v1
   with:
-    args: build --layout fastlane      # any apppreview command line
+    args: build --layout fastlane      # any app-preview command line
     # install-ffmpeg: true             # for app preview videos
 ```
 
@@ -38,22 +38,22 @@ The step fails when validation fails. Outputs: `ok` (`true`/`false`) and `result
 
 ```bash
 # What can I target?
-apppreview targets                      # all Apple and Google targets
-apppreview targets apple.iphone-6.9     # full spec for one target
+app-preview targets                      # all Apple and Google targets
+app-preview targets apple.iphone-6.9     # full spec for one target
 
 # Are my screenshots compliant?
-apppreview validate shots/*.png --target apple.iphone-6.9
+app-preview validate shots/*.png --target apple.iphone-6.9
 
 # Make them compliant for several stores at once
-apppreview generate shots/*.png \
+app-preview generate shots/*.png \
   -t apple.iphone-6.9 -t apple.ipad-13 -t google.phone \
   --out store-assets --background auto
 
 # Which targets does an image already fit?
-apppreview identify shot.png
+app-preview identify shot.png
 
 # Styled marketing screenshot with a caption
-apppreview generate shot.png -t apple.iphone-6.9 --template dark --caption "Plan your week"
+app-preview generate shot.png -t apple.iphone-6.9 --template dark --caption "Plan your week"
 ```
 
 `generate` writes `OUT/<target-id>/NN_<name>.png` and re-validates every file it writes.
@@ -72,16 +72,16 @@ apppreview generate shot.png -t apple.iphone-6.9 --template dark --caption "Plan
 
 ## App preview videos
 
-App Store app previews are 15–30 second videos with strict encoding rules. `apppreview`
+App Store app previews are 15–30 second videos with strict encoding rules. `app-preview`
 checks and converts them with ffmpeg, which must be installed (`brew install ffmpeg` or
 `apt install ffmpeg`). Preview targets end in `-preview`, e.g. `apple.iphone-6.9-preview`
-(`apppreview targets --store apple`).
+(`app-preview targets --store apple`).
 
 ```bash
-apppreview validate demo.mov -t apple.iphone-6.9-preview
-apppreview generate demo.mov -t apple.iphone-6.9-preview -t apple.ipad-13-preview --start 3
-apppreview generate demo.mov -t apple.iphone-6.9-preview --template dark --frame phone --caption "See it in action"
-apppreview slideshow shots/*.png -t apple.iphone-6.9-preview --template clean --caption A --caption B --caption C
+app-preview validate demo.mov -t apple.iphone-6.9-preview
+app-preview generate demo.mov -t apple.iphone-6.9-preview -t apple.ipad-13-preview --start 3
+app-preview generate demo.mov -t apple.iphone-6.9-preview --template dark --frame phone --caption "See it in action"
+app-preview slideshow shots/*.png -t apple.iphone-6.9-preview --template clean --caption A --caption B --caption C
 ```
 
 ![Frames from a templated preview video and a slideshow](https://raw.githubusercontent.com/Dev101911/AppPreviewGenerator/main/docs/images/video-preview.png)
@@ -97,7 +97,7 @@ apppreview slideshow shots/*.png -t apple.iphone-6.9-preview --template clean --
   frame, under the caption.
 - **`slideshow`** turns screenshots into a preview with crossfades, fitting the total into
   15–30 s automatically (or set `--seconds` per slide).
-- **In `apppreview.yaml`**, give a screen a video `source` and add a `-preview` target.
+- **In `app-preview.yaml`**, give a screen a video `source` and add a `-preview` target.
   Video sources go to preview targets and images to screenshot targets. Screens can set
   `start` and `extend`.
 - **Upload layout.** With `--layout fastlane`, previews go to
@@ -115,9 +115,9 @@ emulator or device (adb). The status bar is cleaned up first: 9:41, full battery
 signal, no notifications.
 
 ```bash
-apppreview capture simulators                       # which simulator fits which Apple target
-apppreview capture ios -o shots/en-US/home.png      # --device "iPhone 17 Pro Max" if several are booted
-apppreview capture android -o shots/en-US/home.png  # --device emulator-5554 if several are connected
+app-preview capture simulators                       # which simulator fits which Apple target
+app-preview capture ios -o shots/en-US/home.png      # --device "iPhone 17 Pro Max" if several are booted
+app-preview capture android -o shots/en-US/home.png  # --device emulator-5554 if several are connected
 ```
 
 Each capture reports which targets it already fits. Modern Android phones are taller than
@@ -135,9 +135,9 @@ All sizes are proportional to the canvas, so one template works for every device
 orientation. Captions shrink to fit and wrap automatically.
 
 ```bash
-apppreview templates            # built-in: clean, dark, sunset, minimal
-apppreview templates dark       # show every setting
-apppreview schema template      # JSON Schema for writing your own
+app-preview templates            # built-in: clean, dark, sunset, minimal
+app-preview templates dark       # show every setting
+app-preview schema template      # JSON Schema for writing your own
 ```
 
 Write your own template as YAML, starting from a built-in one:
@@ -164,8 +164,8 @@ Templates are rejected for targets where stores forbid added text or backgrounds
 Put screenshots inside a device with `--frame` or `screenshot.frame` in a template:
 
 ```bash
-apppreview frames                                   # auto, phone, tablet
-apppreview generate shot.png -t apple.iphone-6.9 --frame phone --caption "Plan your week"
+app-preview frames                                   # auto, phone, tablet
+app-preview generate shot.png -t apple.iphone-6.9 --frame phone --caption "Plan your week"
 ```
 
 ```yaml
@@ -187,14 +187,14 @@ screen: [72, 69, 1206, 2622]          # x, y, width, height of the screen in the
 
 Frames are rejected for Wear OS and Android Automotive, where Google forbids them.
 
-## Project config: `apppreview build`
+## Project config: `app-preview build`
 
-For a full store listing, describe every screen, target and locale in `apppreview.yaml`:
+For a full store listing, describe every screen, target and locale in `app-preview.yaml`:
 
 ```bash
-apppreview init        # writes a commented starter apppreview.yaml
-apppreview build       # renders everything, then validates each set
-apppreview build -t apple.iphone-6.9 -l de-DE --dry-run
+app-preview init        # writes a commented starter app-preview.yaml
+app-preview build       # renders everything, then validates each set
+app-preview build -t apple.iphone-6.9 -l de-DE --dry-run
 ```
 
 ```yaml
@@ -217,18 +217,18 @@ screens:
 
 Output goes to `out/<locale>/<target>/NN_<screen>.png`. Captions fall back from
 `de-DE` to `de` to `default`. All missing source files are reported at once, before
-anything is rendered. Run `apppreview schema config` for the JSON Schema.
+anything is rendered. Run `app-preview schema config` for the JSON Schema.
 
 ## Upload layouts: fastlane and Gradle Play Publisher
 
 Write output straight into the folder structure your upload tool reads:
 
 ```bash
-apppreview build --layout fastlane   # deliver (Apple) + supply (Google)
-apppreview build --layout gpp        # Gradle Play Publisher (Google) + deliver (Apple)
+app-preview build --layout fastlane   # deliver (Apple) + supply (Google)
+app-preview build --layout gpp        # Gradle Play Publisher (Google) + deliver (Apple)
 ```
 
-or set `layout: fastlane` in `apppreview.yaml`. `generate` and `graphic` take `--layout` too.
+or set `layout: fastlane` in `app-preview.yaml`. `generate` and `graphic` take `--layout` too.
 
 | Layout | Apple | Google |
 |---|---|---|
@@ -268,7 +268,7 @@ or copy `out/play` into your app module's `src/main/play`.
   which Pillow's wheels bundle). CJK text, which has no spaces, wraps between characters.
 - **Store locale codes.** The stores spell locales differently (`ja` vs `ja-JP`, `he` vs
   `iw-IL`, `zh-Hans` vs `zh-CN`). `build` warns about locales a store doesn't support, and
-  `apppreview locales ja-JP` shows each store's code. One-off commands take `--locale`.
+  `app-preview locales ja-JP` shows each store's code. One-off commands take `--locale`.
 
 ![Arabic feature graphic, laid out right to left](https://raw.githubusercontent.com/Dev101911/AppPreviewGenerator/main/docs/images/feature-graphic-ar.png)
 
@@ -278,15 +278,15 @@ Render the Google Play feature graphic (1024×500) and Android TV banner (1280×
 from your app name, an optional tagline, and your icon, styled by any template:
 
 ```bash
-apppreview graphic -t google.feature-graphic --title "Weekly Planner" \
+app-preview graphic -t google.feature-graphic --title "Weekly Planner" \
   --subtitle "Plan your whole week in seconds" --icon icon.png --template sunset
-apppreview graphic -t google.tv-banner --title "Weekly Planner" --icon icon.png -o banner.png
+app-preview graphic -t google.tv-banner --title "Weekly Planner" --icon icon.png -o banner.png
 ```
 
 ![Sample feature graphic](https://raw.githubusercontent.com/Dev101911/AppPreviewGenerator/main/docs/images/feature-graphic.png)
 
 Content stays inside the central 80% because Google crops feature graphics in some
-placements. In `apppreview.yaml`, add them under `graphics:` with localized text:
+placements. In `app-preview.yaml`, add them under `graphics:` with localized text:
 
 ```yaml
 graphics:
@@ -297,7 +297,7 @@ graphics:
     template: {extends: sunset}      # optional overrides of the config's template
 ```
 
-App icons are plain resizes: `apppreview generate icon.png -t google.icon -t apple.icon`
+App icons are plain resizes: `app-preview generate icon.png -t google.icon -t apple.icon`
 gives a 512×512 Play icon (transparency kept) and a 1024×1024 opaque App Store icon.
 
 ## What gets checked
@@ -334,11 +334,13 @@ Automotive, feature graphic, TV banner, app icon.
 Apple also has an `apple.icon` target (1024×1024, opaque PNG).
 
 Specs live in [`src/apppreview/data/`](src/apppreview/data) with their source URL and the
-date they were last verified. Run `apppreview targets --json` for the full data. A weekly workflow
+date they were last verified. Run `app-preview targets --json` for the full data. A weekly workflow
 compares them with the stores' published pages and opens an issue when something
 changes; see [CONTRIBUTING.md](CONTRIBUTING.md#updating-store-specs).
 
 ## Using from Python
+
+The package installs as `app-preview` and is imported as `apppreview`:
 
 ```python
 from apppreview import generate, validate_images
@@ -357,8 +359,8 @@ Agents can run the CLI with `--json` (see [AGENTS.md](AGENTS.md)) or use the bui
 `schema`, `init_config`, `locales` and `capture`.
 
 ```bash
-pip install "apppreview[mcp]"
-claude mcp add apppreview -- apppreview mcp          # Claude Code
+pip install "app-preview[mcp]"
+claude mcp add app-preview -- app-preview mcp          # Claude Code
 ```
 
 Other MCP clients (e.g. Claude Desktop's `claude_desktop_config.json`):
@@ -366,7 +368,7 @@ Other MCP clients (e.g. Claude Desktop's `claude_desktop_config.json`):
 ```json
 {
   "mcpServers": {
-    "apppreview": {"command": "uvx", "args": ["--from", "apppreview[mcp]", "apppreview", "mcp"]}
+    "app-preview": {"command": "uvx", "args": ["--from", "app-preview[mcp]", "app-preview", "mcp"]}
   }
 }
 ```

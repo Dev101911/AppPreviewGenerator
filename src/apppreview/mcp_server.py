@@ -1,6 +1,6 @@
-"""MCP server: the apppreview CLI as tools for AI agents.
+"""MCP server: the app-preview CLI as tools for AI agents.
 
-Run `apppreview mcp` (stdio). Needs the optional extra: `pip install "apppreview[mcp]"`.
+Run `app-preview mcp` (stdio). Needs the optional extra: `pip install "app-preview[mcp]"`.
 Every tool returns the same JSON documents as the CLI's --json output. Errors come back as
 {"ok": false, "error": {"code", "message"}} instead of raising, so agents can act on the code.
 Relative paths are resolved against the server's working directory.
@@ -15,11 +15,11 @@ from apppreview import __version__
 from apppreview.errors import AppPreviewError
 
 INSTRUCTIONS = """\
-apppreview makes App Store and Google Play screenshots, graphics and app preview videos that
+app-preview makes App Store and Google Play screenshots, graphics and app preview videos that
 pass store validation. Typical flow:
 1. list_targets to pick target IDs (e.g. apple.iphone-6.9, apple.ipad-13, google.phone).
 2. validate existing files, or generate compliant copies (optionally with a template, captions
-   and a device frame). For a full listing across locales, write apppreview.yaml (see
+   and a device frame). For a full listing across locales, write app-preview.yaml (see
    config_schema) and call build with dry_run=true first.
 3. Check `ok`, `outputs[].warnings` and `validation[]` in every result.
 Errors return {"ok": false, "error": {"code", "message"}}; most validation errors are fixed by
@@ -94,7 +94,7 @@ def identify(paths: list[str], store: Literal["apple", "google"] | None = None) 
 def generate(
     inputs: list[str],
     targets: list[str],
-    out_dir: str = "apppreview-out",
+    out_dir: str = "app-preview-out",
     mode: Literal["fit", "fill", "stretch"] = "fit",
     background: str = "#ffffff",
     format: Literal["png", "jpeg"] | None = None,
@@ -122,13 +122,13 @@ def generate(
 
 @_safe
 def build(
-    config: str = "apppreview.yaml",
+    config: str = "app-preview.yaml",
     targets: list[str] | None = None,
     locales: list[str] | None = None,
     layout: Literal["default", "fastlane", "gpp"] | None = None,
     dry_run: bool = False,
 ) -> dict:
-    """Render everything in an apppreview.yaml (screens x targets x locales, plus graphics), then
+    """Render everything in an app-preview.yaml (screens x targets x locales, plus graphics), then
     validate. Use dry_run=true first: it checks the config and lists all outputs."""
     from apppreview.config import build as _build
 
@@ -142,7 +142,7 @@ def graphic(
     subtitle: str | None = None,
     icon: str | None = None,
     template: str = "clean",
-    out: str = "apppreview-out",
+    out: str = "app-preview-out",
     locale: str | None = None,
     layout: Literal["default", "fastlane", "gpp"] = "default",
     dry_run: bool = False,
@@ -157,7 +157,7 @@ def graphic(
 def slideshow(
     images: list[str],
     targets: list[str],
-    out_dir: str = "apppreview-out",
+    out_dir: str = "app-preview-out",
     seconds: float | None = None,
     transition: float = 0.5,
     template: str | None = None,
@@ -191,15 +191,15 @@ def list_templates() -> dict:
 
 @_safe
 def schema(kind: Literal["config", "template"]) -> dict:
-    """JSON Schema for apppreview.yaml (config) or for template files (template)."""
+    """JSON Schema for app-preview.yaml (config) or for template files (template)."""
     from apppreview.config import config_schema, template_schema
 
     return {"ok": True, "schema": config_schema() if kind == "config" else template_schema()}
 
 
 @_safe
-def init_config(path: str = "apppreview.yaml", force: bool = False) -> dict:
-    """Write a commented starter apppreview.yaml. Refuses to overwrite unless force=true."""
+def init_config(path: str = "app-preview.yaml", force: bool = False) -> dict:
+    """Write a commented starter app-preview.yaml. Refuses to overwrite unless force=true."""
     from pathlib import Path
 
     from apppreview.config import STARTER_CONFIG
@@ -244,7 +244,7 @@ def create_server():
             from mcp.server.fastmcp import FastMCP as MCPServer  # mcp 1.x
         except ImportError:
             raise AppPreviewError(
-                "tool_not_found", 'The MCP server needs the "mcp" extra: pip install "apppreview[mcp]"'
+                "tool_not_found", 'The MCP server needs the "mcp" extra: pip install "app-preview[mcp]"'
             ) from None
     try:
         from mcp.types import ToolAnnotations
@@ -252,9 +252,9 @@ def create_server():
         ToolAnnotations = None
 
     try:
-        server = MCPServer("apppreview", instructions=INSTRUCTIONS, version=__version__)
+        server = MCPServer("app-preview", instructions=INSTRUCTIONS, version=__version__)
     except TypeError:  # mcp 1.x has no version parameter
-        server = MCPServer("apppreview", instructions=INSTRUCTIONS)
+        server = MCPServer("app-preview", instructions=INSTRUCTIONS)
     for fn in READ_ONLY + WRITES:
         annotations = None
         if ToolAnnotations is not None:

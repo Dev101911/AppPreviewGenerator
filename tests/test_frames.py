@@ -112,6 +112,6 @@ def test_frame_path_in_config_is_relative_to_config(tmp_path, frame_png):
         "template": {"extends": "clean", "screenshot": {"frame": "frame.png"}},
         "screens": [{"id": "home", "source": "home.png", "caption": "Hi"}],
     }
-    path = tmp_path / "apppreview.yaml"
+    path = tmp_path / "app-preview.yaml"
     path.write_text(yaml.safe_dump(config))
     assert build(path).ok

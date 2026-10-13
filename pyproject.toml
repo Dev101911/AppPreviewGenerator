@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "apppreview"
+name = "app-preview"
 dynamic = ["version"]
 description = "Generate and validate store-compliant App Store and Google Play screenshots, graphics and app preview videos."
 readme = "README.md"
@@ -37,7 +37,7 @@ mcp = ["mcp>=1.2"]
 dev = ["pytest>=8", "ruff>=0.6", "mcp>=1.2"]
 
 [project.scripts]
-apppreview = "apppreview.cli:main"
+app-preview = "apppreview.cli:main"
 
 [tool.hatch.version]
 path = "src/apppreview/__init__.py"

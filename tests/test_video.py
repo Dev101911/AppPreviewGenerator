@@ -161,7 +161,7 @@ def test_config_routes_videos_to_previews(tmp_path):
             {"id": "demo", "source": "demo.mp4", "caption": "Demo"},
         ],
     }
-    path = tmp_path / "apppreview.yaml"
+    path = tmp_path / "app-preview.yaml"
     path.write_text(yaml.safe_dump(config))
     result = build(path, dry_run=True)
     by_target = {o.target: o for o in result.outputs}

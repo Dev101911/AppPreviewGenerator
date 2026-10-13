@@ -42,7 +42,7 @@ def fail(exc: AppPreviewError, as_json: bool):
 
 
 @click.group(context_settings={"help_option_names": ["-h", "--help"]})
-@click.version_option(__version__, prog_name="apppreview")
+@click.version_option(__version__, prog_name="app-preview")
 def main():
     """Generate and validate App Store and Google Play screenshots.
 
@@ -151,7 +151,7 @@ def _badge(severity: str) -> str:
 @main.command(name="generate")
 @click.argument("images", nargs=-1, required=True, type=click.Path())
 @click.option("-t", "--target", "target_ids", multiple=True, required=True, help="Target ID; repeat for several.")
-@click.option("-o", "--out", "out_dir", default="apppreview-out", show_default=True, help="Output directory.")
+@click.option("-o", "--out", "out_dir", default="app-preview-out", show_default=True, help="Output directory.")
 @click.option(
     "--mode",
     type=click.Choice(MODES),
@@ -168,7 +168,7 @@ def _badge(severity: str) -> str:
 @click.option("--format", "fmt", type=click.Choice(["png", "jpeg"]), help="Output format [default: png].")
 @click.option("--size", help="Exact output size WIDTHxHEIGHT; must be accepted by every target.")
 @click.option("--dry-run", is_flag=True, help="Report what would be written without writing files.")
-@click.option("--template", help="Template name (see `apppreview templates`) or template .yaml path.")
+@click.option("--template", help="Template name (see `app-preview templates`) or template .yaml path.")
 @click.option("--caption", "captions", multiple=True, help="Caption per image, in order. Implies a template.")
 @click.option("--subtitle", "subtitles", multiple=True, help="Subtitle per image, in order.")
 @click.option("--locale", help="Language of the captions (e.g. ar, ja-JP), for text direction and shaping.")
@@ -234,7 +234,7 @@ def generate_cmd(
 @click.option(
     "-t", "--target", "target_ids", multiple=True, required=True, help="Preview target, e.g. apple.iphone-6.9-preview."
 )
-@click.option("-o", "--out", "out_dir", default="apppreview-out", show_default=True, help="Output directory.")
+@click.option("-o", "--out", "out_dir", default="app-preview-out", show_default=True, help="Output directory.")
 @click.option("--seconds", type=float, help="Seconds per slide [default: fit the total into 15-30s].")
 @click.option("--transition", type=float, default=0.5, show_default=True, help="Crossfade length in seconds.")
 @click.option("--template", help="Template for every slide.")
@@ -298,7 +298,7 @@ def _report_outputs(result, dry_run: bool, as_json: bool):
 @click.option("--subtitle", help="Optional tagline.")
 @click.option("--icon", type=click.Path(), help="App icon image, shown left of the text.")
 @click.option("--template", default="clean", show_default=True, help="Template for background, colors and fonts.")
-@click.option("-o", "--out", default="apppreview-out", show_default=True, help="Output file or directory.")
+@click.option("-o", "--out", default="app-preview-out", show_default=True, help="Output file or directory.")
 @click.option("--format", "fmt", type=click.Choice(["png", "jpeg"]), help="Output format [default: png].")
 @click.option("--dry-run", is_flag=True, help="Report what would be written without writing files.")
 @click.option("--locale", help="Language of the text (e.g. ar, ja-JP), for text direction and shaping.")
@@ -331,7 +331,7 @@ def graphic_cmd(target_id, title, subtitle, icon, template, out, fmt, dry_run, l
 )
 @json_option
 def build_cmd(config, only_targets, only_locales, dry_run, layout, as_json):
-    """Render every screen x target x locale defined in CONFIG (default: apppreview.yaml)."""
+    """Render every screen x target x locale defined in CONFIG (default: app-preview.yaml)."""
     try:
         result = build(config, only_targets, only_locales, dry_run, layout)
     except AppPreviewError as exc:
@@ -344,7 +344,7 @@ def build_cmd(config, only_targets, only_locales, dry_run, layout, as_json):
 @click.option("--force", is_flag=True, help="Overwrite an existing file.")
 @json_option
 def init_cmd(path, force, as_json):
-    """Write a starter apppreview.yaml."""
+    """Write a starter app-preview.yaml."""
     target = Path(path)
     if target.exists() and not force:
         fail(AppPreviewError("file_exists", f"{target} already exists; use --force to overwrite"), as_json)
@@ -352,7 +352,7 @@ def init_cmd(path, force, as_json):
     if as_json:
         emit_json({"ok": True, "path": str(target)})
     else:
-        click.echo(f"Wrote {target}. Edit the screens, then run `apppreview build`.")
+        click.echo(f"Wrote {target}. Edit the screens, then run `app-preview build`.")
 
 
 @main.command(name="templates")
@@ -385,7 +385,7 @@ def _report_capture(result, as_json):
         return
     click.echo(f"Captured {result.path} from {result.device} ({result.width}x{result.height})")
     click.echo(
-        f"Fits as-is: {', '.join(result.matches) if result.matches else 'no targets; run `apppreview generate`'}"
+        f"Fits as-is: {', '.join(result.matches) if result.matches else 'no targets; run `app-preview generate`'}"
     )
 
 
@@ -473,9 +473,9 @@ def locales_cmd(locale, store, as_json):
 
 @main.command(name="mcp")
 def mcp_cmd():
-    """Run an MCP server over stdio, exposing apppreview as tools for AI agents.
+    """Run an MCP server over stdio, exposing app-preview as tools for AI agents.
 
-    Needs the extra: pip install "apppreview[mcp]".
+    Needs the extra: pip install "app-preview[mcp]".
     """
     from apppreview.mcp_server import create_server
 

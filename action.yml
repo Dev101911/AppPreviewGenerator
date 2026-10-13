@@ -1,4 +1,4 @@
-name: apppreview
+name: app-preview
 description: Generate and validate store-compliant App Store and Google Play screenshots, graphics and app preview videos.
 author: Dev101911
 branding:
@@ -7,10 +7,10 @@ branding:
 
 inputs:
   args:
-    description: "apppreview command line without the program name, e.g. `validate shots/*.png -t apple.iphone-6.9` or `build --layout fastlane`"
+    description: "app-preview command line without the program name, e.g. `validate shots/*.png -t apple.iphone-6.9` or `build --layout fastlane`"
     required: true
   python-version:
-    description: Python version to run apppreview with
+    description: Python version to run app-preview with
     default: "3.12"
   install-ffmpeg:
     description: Install ffmpeg (needed for app preview videos)
@@ -33,7 +33,7 @@ runs:
     - uses: actions/setup-python@v5
       with:
         python-version: ${{ inputs.python-version }}
-    - name: Install apppreview
+    - name: Install app-preview
       shell: bash
       # Install the action's own checkout, so the version always matches the action ref.
       run: python -m pip install --quiet "${{ github.action_path }}"
@@ -41,17 +41,17 @@ runs:
       if: inputs.install-ffmpeg == 'true'
       shell: bash
       run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
-    - name: Run apppreview
+    - name: Run app-preview
       id: run
       shell: bash
       working-directory: ${{ inputs.working-directory }}
       env:
         ARGS: ${{ inputs.args }}
       run: |
-        result="$RUNNER_TEMP/apppreview-result.json"
+        result="$RUNNER_TEMP/app-preview-result.json"
         set +e
         # ARGS comes from the workflow author; eval lets it use globs and quotes.
-        eval "apppreview $ARGS --json" > "$result"
+        eval "app-preview $ARGS --json" > "$result"
         status=$?
         set -e
         echo "result=$result" >> "$GITHUB_OUTPUT"
