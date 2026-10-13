@@ -25,7 +25,7 @@ pipx install "app-preview[mcp]"          # with the MCP server for AI agents
 Validate or build store assets in CI:
 
 ```yaml
-- uses: Dev101911/AppPreviewGenerator@v1
+- uses: Dev101911/AppPreviewGenerator@v0
   with:
     args: build --layout fastlane      # any app-preview command line
     # install-ffmpeg: true             # for app preview videos
