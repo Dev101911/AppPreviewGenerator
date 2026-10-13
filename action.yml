@@ -1,0 +1,60 @@
+name: apppreview
+description: Generate and validate store-compliant App Store and Google Play screenshots, graphics and app preview videos.
+author: Dev101911
+branding:
+  icon: smartphone
+  color: blue
+
+inputs:
+  args:
+    description: "apppreview command line without the program name, e.g. `validate shots/*.png -t apple.iphone-6.9` or `build --layout fastlane`"
+    required: true
+  python-version:
+    description: Python version to run apppreview with
+    default: "3.12"
+  install-ffmpeg:
+    description: Install ffmpeg (needed for app preview videos)
+    default: "false"
+  working-directory:
+    description: Directory to run in
+    default: "."
+
+outputs:
+  ok:
+    description: "\"true\" if the command succeeded and everything validated"
+    value: ${{ steps.run.outputs.ok }}
+  result:
+    description: Path to the JSON result document
+    value: ${{ steps.run.outputs.result }}
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+    - name: Install apppreview
+      shell: bash
+      # Install the action's own checkout, so the version always matches the action ref.
+      run: python -m pip install --quiet "${{ github.action_path }}"
+    - name: Install ffmpeg
+      if: inputs.install-ffmpeg == 'true'
+      shell: bash
+      run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
+    - name: Run apppreview
+      id: run
+      shell: bash
+      working-directory: ${{ inputs.working-directory }}
+      env:
+        ARGS: ${{ inputs.args }}
+      run: |
+        result="$RUNNER_TEMP/apppreview-result.json"
+        set +e
+        # ARGS comes from the workflow author; eval lets it use globs and quotes.
+        eval "apppreview $ARGS --json" > "$result"
+        status=$?
+        set -e
+        echo "result=$result" >> "$GITHUB_OUTPUT"
+        if [ "$status" -eq 0 ]; then echo "ok=true" >> "$GITHUB_OUTPUT"; else echo "ok=false" >> "$GITHUB_OUTPUT"; fi
+        python "${{ github.action_path }}/packaging/action_summary.py" "$result" "$ARGS" >> "$GITHUB_STEP_SUMMARY" || true
+        exit "$status"

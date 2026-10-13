@@ -7,12 +7,30 @@ alike: every command has `--json` output and predictable exit codes.
 ## Install
 
 ```bash
-pipx install git+https://github.com/dev101911/apppreviewgenerator
-# or run without installing
-uvx --from git+https://github.com/dev101911/apppreviewgenerator apppreview --help
+pipx install apppreview                 # or: uv tool install apppreview
+uvx apppreview --help                   # run without installing
+pipx install "apppreview[mcp]"          # with the MCP server for AI agents
 ```
 
-Requires Python 3.10+.
+- **Homebrew:** `brew install pipx && pipx install apppreview`. A tap formula is prepared
+  in [`packaging/homebrew`](packaging/homebrew).
+- **From source:** `pipx install git+https://github.com/Dev101911/AppPreviewGenerator`.
+- **Requirements:** Python 3.10+. Video features need `ffmpeg`; capture needs Xcode (iOS)
+  or adb (Android).
+
+### GitHub Action
+
+Validate or build store assets in CI:
+
+```yaml
+- uses: Dev101911/AppPreviewGenerator@v1
+  with:
+    args: build --layout fastlane      # any apppreview command line
+    # install-ffmpeg: true             # for app preview videos
+```
+
+The step fails when validation fails. Outputs: `ok` (`true`/`false`) and `result`
+(path to the JSON result). A summary is added to the job page.
 
 ## Quickstart
 
@@ -64,7 +82,7 @@ apppreview generate demo.mov -t apple.iphone-6.9-preview --template dark --frame
 apppreview slideshow shots/*.png -t apple.iphone-6.9-preview --template clean --caption A --caption B --caption C
 ```
 
-![Frames from a templated preview video and a slideshow](docs/images/video-preview.png)
+![Frames from a templated preview video and a slideshow](https://raw.githubusercontent.com/Dev101911/AppPreviewGenerator/main/docs/images/video-preview.png)
 
 - **`generate` with a recording** scales to the accepted size (886×1920 for most
   iPhones, 1200×1600 for iPads) and caps the frame rate at 30 fps.
@@ -108,7 +126,7 @@ The status bar overrides stay on for consistent follow-up shots. Reset them with
 
 ## Templates
 
-![Built-in templates: clean, dark, sunset, minimal](docs/images/templates.png)
+![Built-in templates: clean, dark, sunset, minimal](https://raw.githubusercontent.com/Dev101911/AppPreviewGenerator/main/docs/images/templates.png)
 
 Templates put your screenshot on a styled canvas with a caption and optional subtitle.
 All sizes are proportional to the canvas, so one template works for every device and
@@ -139,7 +157,7 @@ Templates are rejected for targets where stores forbid added text or backgrounds
 
 ### Device frames
 
-![Built-in phone frames, a custom PNG frame, and the tablet frame](docs/images/frames.png)
+![Built-in phone frames, a custom PNG frame, and the tablet frame](https://raw.githubusercontent.com/Dev101911/AppPreviewGenerator/main/docs/images/frames.png)
 
 Put screenshots inside a device with `--frame` or `screenshot.frame` in a template:
 
@@ -250,7 +268,7 @@ or copy `out/play` into your app module's `src/main/play`.
   `iw-IL`, `zh-Hans` vs `zh-CN`). `build` warns about locales a store doesn't support, and
   `apppreview locales ja-JP` shows each store's code. One-off commands take `--locale`.
 
-![Arabic feature graphic, laid out right to left](docs/images/feature-graphic-ar.png)
+![Arabic feature graphic, laid out right to left](https://raw.githubusercontent.com/Dev101911/AppPreviewGenerator/main/docs/images/feature-graphic-ar.png)
 
 ## Store graphics and icons
 
@@ -263,7 +281,7 @@ apppreview graphic -t google.feature-graphic --title "Weekly Planner" \
 apppreview graphic -t google.tv-banner --title "Weekly Planner" --icon icon.png -o banner.png
 ```
 
-![Sample feature graphic](docs/images/feature-graphic.png)
+![Sample feature graphic](https://raw.githubusercontent.com/Dev101911/AppPreviewGenerator/main/docs/images/feature-graphic.png)
 
 Content stays inside the central 80% because Google crops feature graphics in some
 placements. In `apppreview.yaml`, add them under `graphics:` with localized text:
