@@ -331,7 +331,29 @@ result = generate(["shot.png"], ["apple.iphone-6.9", "google.phone"], out_dir="o
 
 ## For AI agents
 
-See [AGENTS.md](AGENTS.md).
+Agents can run the CLI with `--json` (see [AGENTS.md](AGENTS.md)) or use the built-in
+**MCP server**, which exposes the same features as tools: `list_targets`, `get_target`,
+`validate`, `identify`, `generate`, `build`, `graphic`, `slideshow`, `list_templates`,
+`schema`, `init_config`, `locales` and `capture`.
+
+```bash
+pip install "apppreview[mcp]"
+claude mcp add apppreview -- apppreview mcp          # Claude Code
+```
+
+Other MCP clients (e.g. Claude Desktop's `claude_desktop_config.json`):
+
+```json
+{
+  "mcpServers": {
+    "apppreview": {"command": "uvx", "args": ["--from", "apppreview[mcp]", "apppreview", "mcp"]}
+  }
+}
+```
+
+Tools return the same JSON as `--json`; errors come back as
+`{"ok": false, "error": {"code", "message"}}`. Relative paths resolve against the
+server's working directory, so start it from your project folder.
 
 ## Roadmap
 

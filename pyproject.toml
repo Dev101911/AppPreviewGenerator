@@ -13,7 +13,8 @@ dependencies = ["click>=8.1", "Pillow>=10.1", "PyYAML>=6.0", "pydantic>=2.5"]
 keywords = ["app store", "google play", "screenshots", "cli", "fastlane"]
 
 [project.optional-dependencies]
-dev = ["pytest>=8", "ruff>=0.6"]
+mcp = ["mcp>=1.2"]
+dev = ["pytest>=8", "ruff>=0.6", "mcp>=1.2"]
 
 [project.scripts]
 apppreview = "apppreview.cli:main"
