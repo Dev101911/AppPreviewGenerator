@@ -1,0 +1,51 @@
+name: Store spec check
+
+# Weekly check that Apple's and Google's published screenshot specs and locale lists
+# still match the bundled data. Opens (or comments on) an issue when they change.
+on:
+  schedule:
+    - cron: "17 8 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -e .
+      - name: Compare published specs with bundled data
+        id: check
+        run: |
+          set +e
+          python -m apppreview.speccheck > report.txt
+          status=$?
+          cat report.txt
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          # 2 means a page could not be fetched or parsed: fail so it is noticed.
+          [ "$status" -ne 2 ]
+      - name: Open or update an issue
+        if: steps.check.outputs.status == '1'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="Store specs changed"
+          {
+            cat report.txt
+            echo
+            echo "Review the pages, update src/apppreview/data/*.json, then run"
+            echo "\`python -m apppreview.speccheck --update-fingerprints\` and open a PR."
+            echo "See CONTRIBUTING.md, \"Updating store specs\"."
+          } > body.md
+          existing=$(gh issue list --state open --search "in:title \"$title\"" --json number --jq '.[0].number')
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body-file body.md
+          else
+            gh issue create --title "$title" --body-file body.md
+          fi

@@ -253,7 +253,9 @@ Automotive, feature graphic, TV banner, app icon.
 Apple also has an `apple.icon` target (1024×1024, opaque PNG).
 
 Specs live in [`src/apppreview/data/`](src/apppreview/data) with their source URL and the
-date they were last verified. Run `apppreview targets --json` for the full data.
+date they were last verified. Run `apppreview targets --json` for the full data. A weekly workflow
+compares them with the stores' published pages and opens an issue when something
+changes; see [CONTRIBUTING.md](CONTRIBUTING.md#updating-store-specs).
 
 ## Using from Python
 

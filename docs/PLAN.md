@@ -59,7 +59,7 @@ Exit codes: `0` success / all valid, `1` validation failures, `2` usage or input
 - MCP server so AI agents can call targets/validate/generate as tools.
 - App preview videos (#21).
 - Distribution: PyPI, `pipx`/`uvx`, Homebrew; GitHub Action.
-- Spec freshness process (scheduled check against store docs).
+- ✅ Spec freshness: weekly check against store docs that opens an issue (#19).
 
 ## Spec sources
 - Apple: https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications

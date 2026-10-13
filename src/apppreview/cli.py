@@ -77,6 +77,8 @@ def targets(target_id, store, as_json):
         if t.constraints and not t.sizes:
             detail = f"rule-based (e.g. {detail})"
         click.echo(f"{t.id:<{width}}  {t.name:<38} {detail}")
+    for store_targets in {t.store: t for t in selected}.values():
+        click.echo(f"\n{store_targets.store} specs verified {store_targets.verified}: {store_targets.source}")
 
 
 def _print_target(t):
