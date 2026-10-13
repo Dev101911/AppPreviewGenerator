@@ -55,7 +55,7 @@ Exit codes: `0` success / all valid, `1` validation failures, `2` usage or input
 
 ### M3 — Workflow integration
 - ✅ Output layouts for fastlane `deliver`/`supply` and Gradle Play Publisher (#15).
-- Capture from iOS Simulator (`xcrun simctl`) and Android emulator (`adb`).
+- ✅ Capture from iOS Simulator (`xcrun simctl`) and Android emulator (`adb`) (#16).
 - MCP server so AI agents can call targets/validate/generate as tools.
 - App preview videos (#21).
 - Distribution: PyPI, `pipx`/`uvx`, Homebrew; GitHub Action.
