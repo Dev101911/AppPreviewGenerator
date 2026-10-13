@@ -73,7 +73,7 @@ def test_rtl_mirrors_left_alignment():
 
 def test_locale_overrides_and_warnings(tmp_path):
     Image.new("RGB", (1179, 2556), "white").save(tmp_path / "home.png")
-    regular = str(resources.files("apppreview") / "data" / "fonts" / "Inter-Regular.otf")
+    regular = str(resources.files("apppreview") / "data" / "fonts" / "InterVariable.ttf")
     config = {
         "targets": ["apple.iphone-6.9", "google.phone"],
         "locales": ["en-US", "ja-JP", "xx-YY"],

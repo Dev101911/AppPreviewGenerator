@@ -96,6 +96,8 @@ def render_graphic(
     icon_size = round(ICON_SIZE * h) if icon is not None else 0
     gap = round(0.07 * h) if icon is not None else 0
     text_width = SAFE_WIDTH * w - icon_size - gap
+    if template.caption.max_width:
+        text_width = min(text_width, template.caption.max_width * w)
     align = "left" if icon is not None else "center"
     title_style = template.caption.model_copy(
         update={"size": TITLE_SIZE, "min_size": TITLE_MIN, "max_lines": 2, "align": align}

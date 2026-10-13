@@ -13,7 +13,7 @@ from apppreview.errors import AppPreviewError
 from apppreview.frames import FrameStyle, aspect_warning, frame_layer
 from apppreview.locales import is_rtl, language
 from apppreview.specs import Size
-from apppreview.template import Background, Template, TextStyle
+from apppreview.template import Background, BadgeStyle, Template, TextStyle, weight_value
 
 # Text may use at most this share of the canvas height.
 TEXT_BUDGET = 0.32
@@ -58,18 +58,37 @@ def _gradient_mask(size: Size, angle: float) -> Image.Image:
 
 
 @lru_cache(maxsize=64)
-def load_font(font: str | None, weight: str, size: int) -> ImageFont.FreeTypeFont:
+def load_font(font: str | None, weight: str | int, size: int) -> ImageFont.FreeTypeFont:
+    """Load `font` (default: the bundled Inter variable font) at `weight` if it has a weight axis."""
     if font is None:
-        name = "Inter-Bold.otf" if weight == "bold" else "Inter-Regular.otf"
-        path = resources.files("apppreview") / "data" / "fonts" / name
+        path = resources.files("apppreview") / "data" / "fonts" / "InterVariable.ttf"
         with resources.as_file(path) as real:
-            return ImageFont.truetype(str(real), size)
+            loaded = ImageFont.truetype(str(real), size)
+    else:
+        try:
+            loaded = ImageFont.truetype(font, size)
+        except OSError:
+            raise AppPreviewError(
+                "font_not_found", f"Cannot load font '{font}'; give a .ttf/.otf path or an installed font file name"
+            ) from None
+    _set_weight(loaded, weight_value(weight))
+    return loaded
+
+
+def _set_weight(font: ImageFont.FreeTypeFont, weight: int) -> None:
+    """Set the weight axis of a variable font; static fonts keep their own weight."""
     try:
-        return ImageFont.truetype(font, size)
-    except OSError:
-        raise AppPreviewError(
-            "font_not_found", f"Cannot load font '{font}'; give a .ttf/.otf path or an installed font file name"
-        ) from None
+        axes = font.get_variation_axes()
+    except OSError:  # not a variable font (or FreeType without variation support)
+        return
+    names = [axis["name"] for axis in axes]
+    if b"Weight" not in names and "Weight" not in names:
+        return
+    values = [
+        max(axis["minimum"], min(axis["maximum"], weight)) if axis["name"] in (b"Weight", "Weight") else axis["default"]
+        for axis in axes
+    ]
+    font.set_variation_by_axes(values)
 
 
 HAS_RAQM = features.check("raqm")
@@ -191,9 +210,7 @@ def _draw_text(canvas: Image.Image, block: TextBlock, left: float, top: float, w
     # Center each line's glyphs vertically within its line box.
     ascent, descent = block.font.getmetrics()
     offset = (block.line_height - (ascent + descent)) / 2
-    align = block.style.align
-    if block.rtl:  # mirror the template's alignment for right-to-left scripts
-        align = {"left": "right", "right": "left"}.get(align, align)
+    align = _align(block.style.align, block.rtl)
     for i, line in enumerate(block.lines):
         line_width = block.font.getlength(line, **block.layout)
         x = {"left": left, "center": left + (width - line_width) / 2, "right": left + width - line_width}[align]
@@ -222,6 +239,55 @@ class Layers:
     warnings: list[str]
 
 
+def _align(align: str, rtl: bool) -> str:
+    """Mirror left/right alignment for right-to-left scripts."""
+    return {"left": "right", "right": "left"}.get(align, align) if rtl else align
+
+
+def text_column(style: TextStyle, w: int, pad: float, rtl: bool = False) -> tuple[float, float]:
+    """(left, width) of the text column: the padded width, narrowed by style.max_width."""
+    full = w - 2 * pad
+    width = min(full, style.max_width * w) if style.max_width else full
+    align = _align(style.align, rtl)
+    left = {"left": pad, "center": (w - width) / 2, "right": w - pad - width}[align]
+    return left, width
+
+
+@dataclass
+class Badge:
+    text: str
+    font: ImageFont.FreeTypeFont
+    style: BadgeStyle
+    width: int
+    height: int
+    layout: dict = field(default_factory=dict)
+
+
+def fit_badge(text: str, style: BadgeStyle, unit: int, max_width: float, locale: str | None = None) -> Badge:
+    """Size a pill around `text`, shrinking the font if the pill is wider than `max_width`."""
+    layout = layout_options(locale)
+    if style.uppercase:
+        text = text.upper()
+    size = style.size * unit
+    for _ in range(2):
+        font = load_font(style.font, style.weight, max(1, round(size)))
+        pad = style.padding * size
+        width = font.getlength(text, **layout) + 2 * pad
+        if width <= max_width:
+            break
+        size *= max_width / width
+    return Badge(text, font, style, round(min(width, max_width)), round(size * 1.8), layout)
+
+
+def _draw_badge(canvas: Image.Image, badge: Badge, left: float, top: float) -> None:
+    box = (round(left), round(top), round(left) + badge.width - 1, round(top) + badge.height - 1)
+    draw = ImageDraw.Draw(canvas)
+    radius = round(badge.style.radius * badge.height)
+    draw.rounded_rectangle(box, radius, fill=_rgba(badge.style.background))
+    center = (left + badge.width / 2, top + badge.height / 2)
+    draw.text(center, badge.text, font=badge.font, fill=_rgba(badge.style.color), anchor="mm", **badge.layout)
+
+
 def layout(
     template: Template,
     size: Size,
@@ -229,37 +295,57 @@ def layout(
     caption: str | None = None,
     subtitle: str | None = None,
     locale: str | None = None,
+    badge: str | None = None,
 ) -> Layers:
     warnings: list[str] = []
     w, h = size
     unit = min(w, h)
     pad = template.padding * unit
     gap = template.gap * unit
-    text_width = w - 2 * pad
+    rtl = is_rtl(locale)
     canvas = render_background(template.background, size)
 
     budget = TEXT_BUDGET * h
+    pill = None
+    badge_space = 0
+    if badge:
+        _, badge_width = text_column(template.caption, w, pad, rtl)
+        pill = fit_badge(badge, template.badge, unit, badge_width, locale)
+        badge_space = pill.height + round(template.badge.gap * unit)
+        budget -= badge_space
+        missing = missing_glyphs(pill.font, pill.text)
+        if missing:
+            warnings.append(f"The badge font has no glyphs for {''.join(missing[:8])}; they render as boxes")
     blocks = []
-    if caption:
-        blocks.append(fit_text(caption, template.caption, unit, text_width, budget, locale))
-        budget -= blocks[-1].height
-    if subtitle:
-        blocks.append(fit_text(subtitle, template.subtitle, unit, text_width, max(budget, 0), locale))
+    columns = []
+    for text, style in ((caption, template.caption), (subtitle, template.subtitle)):
+        if text:
+            columns.append(text_column(style, w, pad, rtl))
+            blocks.append(fit_text(text, style, unit, columns[-1][1], max(budget, 0), locale))
+            budget -= blocks[-1].height
     warnings.extend(text_warnings(blocks))
     line_gap = round(0.3 * blocks[0].line_height) if len(blocks) == 2 else 0
     text_height = sum(b.height for b in blocks) + line_gap
+    if pill:
+        text_height = text_height + badge_space if blocks else pill.height
+    has_text = bool(blocks or pill)
 
     if template.caption_position == "top":
         text_top = pad
-        region_top, region_bottom = pad + (text_height + gap if blocks else 0), h - pad
+        region_top, region_bottom = pad + (text_height + gap if has_text else 0), h - pad
     else:
         text_top = h - pad - text_height
-        region_top, region_bottom = pad, h - pad - (text_height + gap if blocks else 0)
+        region_top, region_bottom = pad, h - pad - (text_height + gap if has_text else 0)
 
     y = text_top
-    for block in blocks:
-        _draw_text(canvas, block, pad, y, text_width)
+    if pill and template.badge.position == "above":
+        _place_badge(canvas, pill, template.caption, w, pad, rtl, y)
+        y += badge_space
+    for block, (left, width) in zip(blocks, columns, strict=True):
+        _draw_text(canvas, block, left, y, width)
         y += block.height + line_gap
+    if pill and template.badge.position == "below":
+        _place_badge(canvas, pill, template.caption, w, pad, rtl, text_top + text_height - pill.height)
 
     style = template.screenshot
     frame = None
@@ -321,6 +407,13 @@ def layout(
     return Layers(canvas, over, screen, mask, content_scale, warnings)
 
 
+def _place_badge(canvas: Image.Image, pill: Badge, style: TextStyle, w: int, pad: float, rtl: bool, top: float) -> None:
+    """Draw the badge lined up with the caption column."""
+    left, width = text_column(style, w, pad, rtl)
+    x = {"left": left, "center": left + (width - pill.width) / 2, "right": left + width - pill.width}
+    _draw_badge(canvas, pill, x[_align(style.align, rtl)], top)
+
+
 def place(layers: Layers, content: Image.Image) -> Image.Image:
     """Put `content` into the screen area and return the flattened RGB image."""
     x, y, sw, sh = layers.screen
@@ -343,8 +436,9 @@ def compose(
     caption: str | None = None,
     subtitle: str | None = None,
     locale: str | None = None,
+    badge: str | None = None,
 ) -> tuple[Image.Image, float, list[str]]:
     """Return an RGB image of `size`, the scale applied to the screenshot, and warnings."""
     shot = ImageOps.exif_transpose(screenshot)
-    layers = layout(template, size, shot.size, caption, subtitle, locale)
+    layers = layout(template, size, shot.size, caption, subtitle, locale, badge)
     return place(layers, shot), layers.scale, layers.warnings

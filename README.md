@@ -69,6 +69,9 @@ app-preview generate shot.png -t apple.iphone-6.9 --template dark --caption "Pla
 | `--dry-run` | Show what would be written |
 | `--template` | Place screenshots on a styled template (see below) |
 | `--caption`, `--subtitle` | Text per image, in input order (implies the `clean` template) |
+| `--badge` | Badge per image, in input order, e.g. `PRO` to mark a paid feature |
+| `--caption-width` | Max text width as a fraction of the canvas width, e.g. `0.7` |
+| `--caption-weight` | Caption font weight: `thin` … `regular`, `medium`, `semibold`, `bold` … `black`, or `100`–`900` |
 
 ## App preview videos
 
@@ -147,13 +150,24 @@ Write your own template as YAML, starting from a built-in one:
 extends: dark
 background:
   gradient: {from: "#4F46E5", to: "#0EA5E9", angle: 135}   # or {color: ...} or {image: bg.png}
-caption: {color: "#FFFFFF", font: fonts/Brand-Bold.ttf, size: 0.08}
-subtitle: {color: "#E0E7FF"}
+caption: {color: "#FFFFFF", font: fonts/Brand-Bold.ttf, size: 0.08, max_width: 0.75}
+subtitle: {color: "#E0E7FF", weight: light}
 caption_position: top            # or bottom
+badge: {position: above, background: "#FACC15", color: "#111111"}   # or below
 screenshot: {max_width: 0.8, corner_radius: 0.05, shadow: {blur: 0.03}}
 ```
 
-The bundled default font is [Inter](https://github.com/rsms/inter) (SIL Open Font License).
+- `max_width` narrows the caption or subtitle column (a fraction of the canvas width); the
+  column follows `align`.
+- `weight` is `thin`, `extralight`, `light`, `regular`, `medium`, `semibold`, `bold`,
+  `extrabold`, `black` or a number from 100 to 900. It applies to the bundled font and to
+  variable fonts with a weight axis; a static font file keeps its own weight.
+- `badge` styles the optional pill shown above or below the caption, e.g. to mark paid
+  features. Set its text per screenshot with `--badge` or `badge:` in the config. Settings:
+  `position`, `background`, `color`, `font`, `weight`, `size`, `padding`, `radius`, `gap`
+  and `uppercase`.
+
+The bundled default font is [Inter](https://github.com/rsms/inter) (variable, SIL Open Font License).
 Templates are rejected for targets where stores forbid added text or backgrounds
 (Wear OS, Android Automotive, the Play app icon).
 
@@ -212,6 +226,7 @@ screens:
       apple.ipad-*: shots/{locale}/ipad/detail.png
       default: shots/{locale}/detail.png
     caption: {default: "Every detail, one tap away"}
+    badge: {default: Pro, de: Profi}       # optional, e.g. for paid features
     template: {caption_position: bottom}   # per-screen overrides
 ```
 

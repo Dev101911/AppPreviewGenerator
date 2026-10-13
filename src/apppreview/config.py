@@ -49,6 +49,9 @@ class Screen(BaseModel):
         None, description="Caption text, or a mapping of locale -> text (falls back to language, then 'default')"
     )
     subtitle: LocalizedText | None = None
+    badge: LocalizedText | None = Field(
+        None, description="Badge text such as 'PRO' to mark a paid feature, or a mapping of locale -> text"
+    )
     template: str | dict | None = Field(None, description="Template overrides for this screen only")
     start: float = Field(0.0, ge=0, description="Video sources: start time in seconds (previews are at most 30s)")
     extend: bool = Field(False, description="Video sources: hold the last frame to reach the 15s minimum")
@@ -166,6 +169,7 @@ class Job:
     subtitle: str | None
     start: float = 0.0  # video sources only
     extend: bool = False
+    badge: str | None = None
 
 
 @dataclass
@@ -219,7 +223,7 @@ def plan(
         resolve_background(config.background, None)
 
     base_template = load_template(config.template, base_dir=base_dir) if config.template else None
-    has_text = any(s.caption or s.subtitle for s in config.screens)
+    has_text = any(s.caption or s.subtitle or s.badge for s in config.screens)
     if base_template is None and has_text:
         base_template = load_template("clean")
     screen_templates = {
@@ -297,6 +301,7 @@ def plan(
                         template=for_locale(screen_templates[screen.id], locale),
                         caption=localized(screen.caption, locale, f"{what} caption"),
                         subtitle=localized(screen.subtitle, locale, f"{what} subtitle"),
+                        badge=localized(screen.badge, locale, f"{what} badge"),
                         start=screen.start,
                         extend=screen.extend,
                     )
@@ -365,6 +370,7 @@ def build(
                 caption=job.caption,
                 subtitle=job.subtitle,
                 locale=job.locale,
+                badge=job.badge,
                 start=job.start,
                 extend=job.extend,
                 dry_run=dry_run,
@@ -391,6 +397,7 @@ def build(
                 subtitle=job.subtitle,
                 dry_run=dry_run,
                 locale=job.locale,
+                badge=job.badge,
             )
         output = Output(
             str(job.source or ""), target.id, str(job.dest), *out_size, fmt, scale, warnings, job.locale, job.name
@@ -436,6 +443,8 @@ screens:
       default: screenshots/{locale}/detail.png
     caption:
       en-US: Every detail, one tap away
+    # Optional badge above the caption, e.g. to mark a paid feature.
+    badge: Pro
 
 # Store graphics rendered from your app name and icon (optional).
 graphics:

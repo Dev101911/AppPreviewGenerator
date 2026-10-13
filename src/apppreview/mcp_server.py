@@ -102,6 +102,9 @@ def generate(
     template: str | None = None,
     captions: list[str] | None = None,
     subtitles: list[str] | None = None,
+    badges: list[str] | None = None,
+    caption_width: float | None = None,
+    caption_weight: str | int | None = None,
     frame: str | None = None,
     locale: str | None = None,
     layout: Literal["default", "fastlane", "gpp"] = "default",
@@ -110,13 +113,16 @@ def generate(
     dry_run: bool = False,
 ) -> dict:
     """Make compliant copies of screenshots (or, for *-preview targets, recordings) for each target.
-    template/captions/frame give styled marketing screenshots; captions/subtitles are one per input."""
+    template/captions/frame give styled marketing screenshots; captions/subtitles/badges are one per
+    input (a badge such as "PRO" marks a paid feature). caption_width is the max text width as a
+    fraction of the canvas; caption_weight is regular, medium, semibold, bold, ... or 100-900."""
     from apppreview.generate import generate as _generate
 
     return _generate(
         inputs, targets, out_dir, mode, background, format, size, dry_run,
         template=template, captions=captions, subtitles=subtitles, locale=locale,
-        frame=frame, layout=layout, start=start, extend=extend,
+        frame=frame, layout=layout, start=start, extend=extend, badges=badges,
+        caption_width=caption_width, caption_weight=caption_weight,
     ).to_dict()  # fmt: skip
 
 
@@ -162,6 +168,9 @@ def slideshow(
     transition: float = 0.5,
     template: str | None = None,
     captions: list[str] | None = None,
+    badges: list[str] | None = None,
+    caption_width: float | None = None,
+    caption_weight: str | int | None = None,
     frame: str | None = None,
     locale: str | None = None,
     layout: Literal["default", "fastlane", "gpp"] = "default",
@@ -172,7 +181,8 @@ def slideshow(
 
     return make_slideshow(
         images, targets, out_dir, seconds=seconds, transition=transition, template=template,
-        captions=captions, frame=frame, locale=locale, layout=layout, dry_run=dry_run,
+        captions=captions, frame=frame, locale=locale, layout=layout, dry_run=dry_run, badges=badges,
+        caption_width=caption_width, caption_weight=caption_weight,
     ).to_dict()  # fmt: skip
 
 
