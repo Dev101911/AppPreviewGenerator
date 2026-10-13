@@ -54,7 +54,7 @@ Exit codes: `0` success / all valid, `1` validation failures, `2` usage or input
 - ✅ Google feature graphic, TV banner, and icon generation/validation (#14).
 
 ### M3 — Workflow integration
-- Output layouts for fastlane `deliver`/`supply` and Gradle Play Publisher.
+- ✅ Output layouts for fastlane `deliver`/`supply` and Gradle Play Publisher (#15).
 - Capture from iOS Simulator (`xcrun simctl`) and Android emulator (`adb`).
 - MCP server so AI agents can call targets/validate/generate as tools.
 - App preview videos (#21).

@@ -22,6 +22,7 @@ from apppreview.generate import (
     save_image,
 )
 from apppreview.graphic import check_graphic_target, graphic_name, render_graphic
+from apppreview.layouts import check_layout, deliver_collisions, layout_path, unsupported_reason
 from apppreview.locales import language, store_locale
 from apppreview.specs import get_target
 from apppreview.template import Template, load_template
@@ -73,6 +74,14 @@ class Config(BaseModel):
     mode: Literal["fit", "fill", "stretch"] = Field("fit", description="Resize mode when no template is used")
     background: str = Field("#ffffff", description="Letterbox color when no template is used, or 'auto'")
     format: Literal["png", "jpeg"] | None = None
+    layout: Literal["default", "fastlane", "gpp"] = Field(
+        "default",
+        description=(
+            "Output folder layout: default (<locale>/<target>/), fastlane (deliver + supply), "
+            "or gpp (Gradle Play Publisher for Google; deliver for Apple)"
+        ),
+    )
+    default_locale: str = Field("en-US", description="Locale folder for fastlane/gpp layouts when locales is empty")
     locale_overrides: dict[str, str | dict] = Field(
         default_factory=dict,
         description=(
@@ -188,7 +197,9 @@ def locale_warnings(config: Config, stores: set[str]) -> list[str]:
     return warnings
 
 
-def plan(config: Config, base_dir: Path, only_targets=(), only_locales=()) -> tuple[list[Job], list[str]]:
+def plan(
+    config: Config, base_dir: Path, only_targets=(), only_locales=(), layout_override: str | None = None
+) -> tuple[list[Job], list[str]]:
     """Resolve every output to produce, failing fast on any config problem.
 
     Returns the jobs and any warnings about the config."""
@@ -229,9 +240,20 @@ def plan(config: Config, base_dir: Path, only_targets=(), only_locales=()) -> tu
     if len(set(ids)) != len(ids):
         raise AppPreviewError("invalid_config", "Screen ids must be unique")
 
-    jobs, missing = [], []
+    jobs, missing, warnings = [], [], []
     out_root = base_dir / config.out
+    layout = layout_override or config.layout
+    check_layout(layout)
+
+    def skip(target) -> bool:
+        reason = unsupported_reason(layout, target)
+        if reason:
+            warnings.append(f"Skipped {target.id} in the {layout} layout: {reason}")
+        return bool(reason)
+
     for target in targets:
+        if skip(target):
+            continue
         check_target_options(
             target,
             len(config.screens),
@@ -242,7 +264,6 @@ def plan(config: Config, base_dir: Path, only_targets=(), only_locales=()) -> tu
         )
         fmt = config.format or target.formats[0]
         for locale in locales:
-            folder = out_root / locale / target.id if locale else out_root / target.id
             for index, screen in enumerate(config.screens, start=1):
                 raw = screen.source if isinstance(screen.source, str) else pick_for_target(screen.source, target.id)
                 if raw is None:
@@ -260,7 +281,9 @@ def plan(config: Config, base_dir: Path, only_targets=(), only_locales=()) -> tu
                         target_id=target.id,
                         locale=locale,
                         source=source,
-                        dest=folder / output_name(index, screen.id, fmt),
+                        dest=layout_path(
+                            layout, out_root, target, locale, output_name(index, screen.id, fmt), config.default_locale
+                        ),
                         template=for_locale(screen_templates[screen.id], locale),
                         caption=localized(screen.caption, locale, f"{what} caption"),
                         subtitle=localized(screen.subtitle, locale, f"{what} subtitle"),
@@ -269,11 +292,12 @@ def plan(config: Config, base_dir: Path, only_targets=(), only_locales=()) -> tu
     for g in graphics:
         target = get_target(g.target)
         check_graphic_target(target)
+        if skip(target):
+            continue
         check_target_options(target, 1, config.format, None, True)
         template = load_template(base_template or "clean", g.template, base_dir)
         fmt = config.format or target.formats[0]
         for locale in locales:
-            folder = out_root / locale / target.id if locale else out_root / target.id
             icon = base_dir / g.icon.format(locale=locale or "") if g.icon else None
             if icon and not icon.is_file():
                 missing.append(str(icon))
@@ -286,7 +310,7 @@ def plan(config: Config, base_dir: Path, only_targets=(), only_locales=()) -> tu
                     target_id=target.id,
                     locale=locale,
                     source=icon,
-                    dest=folder / name,
+                    dest=layout_path(layout, out_root, target, locale, name, config.default_locale),
                     template=for_locale(template, locale),
                     caption=localized(g.title, locale, f"{what} title"),
                     subtitle=localized(g.subtitle, locale, f"{what} subtitle"),
@@ -296,7 +320,9 @@ def plan(config: Config, base_dir: Path, only_targets=(), only_locales=()) -> tu
         listed = "\n".join(f"  {m}" for m in sorted(set(missing)))
         raise AppPreviewError("input_not_found", f"{len(set(missing))} source image(s) not found:\n{listed}")
     stores = {t.store for t in targets} | {get_target(g.target).store for g in graphics}
-    return jobs, locale_warnings(config, stores)
+    if layout != "default":
+        warnings += deliver_collisions(targets)
+    return jobs, locale_warnings(config, stores) + warnings
 
 
 def build(
@@ -304,9 +330,10 @@ def build(
     only_targets=(),
     only_locales=(),
     dry_run: bool = False,
+    layout: str | None = None,
 ) -> BuildResult:
     config, base_dir = load_config(config_path)
-    jobs, config_warnings = plan(config, base_dir, only_targets, only_locales)
+    jobs, config_warnings = plan(config, base_dir, only_targets, only_locales, layout)
 
     cache: dict[Path, object] = {}
     outputs: list[Output] = []

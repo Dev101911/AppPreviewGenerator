@@ -9,6 +9,7 @@ from PIL import Image, ImageFilter, ImageOps
 from apppreview.compose import _draw_text, _rgba, _rounded_mask, fit_text, render_background, text_warnings
 from apppreview.errors import AppPreviewError
 from apppreview.generate import GenerateResult, Output, check_target_options, load_source, save_image
+from apppreview.layouts import check_layout, layout_path, unsupported_reason
 from apppreview.locales import is_rtl
 from apppreview.specs import Size, Target, get_target
 from apppreview.template import Template, load_template
@@ -46,6 +47,7 @@ def generate_graphic(
     fmt: str | None = None,
     dry_run: bool = False,
     locale: str | None = None,
+    layout: str = "default",
 ) -> GenerateResult:
     """Render a graphic target. `out` is a file path, or a directory for the default name."""
     target = target if isinstance(target, Target) else get_target(target)
@@ -55,7 +57,14 @@ def generate_graphic(
         template = load_template(template)
     fmt = fmt or target.formats[0]
     out = Path(out)
-    dest = out if out.suffix.lower() in (".png", ".jpg", ".jpeg") else out / target.id / graphic_name(target, fmt)
+    check_layout(layout)
+    reason = unsupported_reason(layout, target)
+    if reason:
+        raise AppPreviewError("unsupported_in_layout", f"{target.id}: {reason}")
+    if out.suffix.lower() in (".png", ".jpg", ".jpeg"):
+        dest = out
+    else:
+        dest = layout_path(layout, out, target, locale, graphic_name(target, fmt))
     if not title:
         raise AppPreviewError("missing_text", "A graphic needs a title")
     icon_img = load_source(icon) if icon else None

@@ -10,6 +10,7 @@ from PIL import Image, ImageColor, ImageOps, ImageStat, UnidentifiedImageError
 
 from apppreview.compose import compose
 from apppreview.errors import AppPreviewError
+from apppreview.layouts import check_layout, layout_path, unsupported_reason
 from apppreview.specs import Size, Target, format_sizes, get_target, size_problems
 from apppreview.template import Template, load_template
 from apppreview.validate import Report, validate_images
@@ -257,6 +258,7 @@ def generate(
     subtitles: list[str] | None = None,
     locale: str | None = None,
     frame: str | None = None,
+    layout: str = "default",
 ) -> GenerateResult:
     if mode not in MODES:
         raise AppPreviewError("invalid_mode", f"Invalid mode '{mode}'; use one of {', '.join(MODES)}")
@@ -281,7 +283,11 @@ def generate(
     if background != "auto":
         resolve_background(background, None)  # fail fast on an invalid color
 
+    check_layout(layout)
     for target in resolved:
+        reason = unsupported_reason(layout, target)
+        if reason:
+            raise AppPreviewError("unsupported_in_layout", f"{target.id}: {reason}")
         check_target_options(
             target, len(inputs), fmt, size, template is not None, bool(template and template.screenshot.frame)
         )
@@ -294,7 +300,7 @@ def generate(
         target_outputs = []
         for index, (path, img) in enumerate(sources, start=1):
             target_format = fmt or target.formats[0]
-            dest = out_dir / target.id / output_name(index, path.stem, target_format)
+            dest = layout_path(layout, out_dir, target, locale, output_name(index, path.stem, target_format))
             out_size, target_format, scale, warnings = produce(
                 img,
                 target,

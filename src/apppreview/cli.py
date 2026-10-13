@@ -170,6 +170,11 @@ def _badge(severity: str) -> str:
 @click.option("--subtitle", "subtitles", multiple=True, help="Subtitle per image, in order.")
 @click.option("--locale", help="Language of the captions (e.g. ar, ja-JP), for text direction and shaping.")
 @click.option("--frame", help="Device frame: auto, phone, tablet, or a frame .png/.yaml path. Implies a template.")
+@click.option(
+    "--layout",
+    type=click.Choice(["default", "fastlane", "gpp"]),
+    help="Folder layout: default, fastlane (deliver/supply) or gpp (Gradle Play Publisher).",
+)
 @json_option
 def generate_cmd(
     images,
@@ -185,6 +190,7 @@ def generate_cmd(
     subtitles,
     locale,
     frame,
+    layout,
     as_json,
 ):
     """Resize IMAGES into compliant screenshots for one or more targets.
@@ -207,6 +213,7 @@ def generate_cmd(
             subtitles=list(subtitles) or None,
             locale=locale,
             frame=frame,
+            layout=layout or "default",
         )
     except AppPreviewError as exc:
         fail(exc, as_json)
@@ -244,11 +251,18 @@ def _report_outputs(result, dry_run: bool, as_json: bool):
 @click.option("--format", "fmt", type=click.Choice(["png", "jpeg"]), help="Output format [default: png].")
 @click.option("--dry-run", is_flag=True, help="Report what would be written without writing files.")
 @click.option("--locale", help="Language of the text (e.g. ar, ja-JP), for text direction and shaping.")
+@click.option(
+    "--layout",
+    type=click.Choice(["default", "fastlane", "gpp"]),
+    help="Folder layout: default, fastlane (deliver/supply) or gpp (Gradle Play Publisher).",
+)
 @json_option
-def graphic_cmd(target_id, title, subtitle, icon, template, out, fmt, dry_run, locale, as_json):
+def graphic_cmd(target_id, title, subtitle, icon, template, out, fmt, dry_run, locale, layout, as_json):
     """Render a store graphic (feature graphic, TV banner) from a title and app icon."""
     try:
-        result = generate_graphic(target_id, title, subtitle, icon, template, out, fmt, dry_run, locale)
+        result = generate_graphic(
+            target_id, title, subtitle, icon, template, out, fmt, dry_run, locale, layout or "default"
+        )
     except AppPreviewError as exc:
         fail(exc, as_json)
     _report_outputs(result, dry_run, as_json)
@@ -259,11 +273,16 @@ def graphic_cmd(target_id, title, subtitle, icon, template, out, fmt, dry_run, l
 @click.option("-t", "--target", "only_targets", multiple=True, help="Only build these targets.")
 @click.option("-l", "--locale", "only_locales", multiple=True, help="Only build these locales.")
 @click.option("--dry-run", is_flag=True, help="Check the config and list outputs without rendering.")
+@click.option(
+    "--layout",
+    type=click.Choice(["default", "fastlane", "gpp"]),
+    help="Override the config's layout: default, fastlane (deliver/supply) or gpp (Gradle Play Publisher).",
+)
 @json_option
-def build_cmd(config, only_targets, only_locales, dry_run, as_json):
+def build_cmd(config, only_targets, only_locales, dry_run, layout, as_json):
     """Render every screen x target x locale defined in CONFIG (default: apppreview.yaml)."""
     try:
-        result = build(config, only_targets, only_locales, dry_run)
+        result = build(config, only_targets, only_locales, dry_run, layout)
     except AppPreviewError as exc:
         fail(exc, as_json)
     _report_outputs(result, dry_run, as_json)
