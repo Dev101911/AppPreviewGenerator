@@ -94,6 +94,10 @@ def _generate_hint(path: Path, target: Target) -> str:
 
 
 def validate_file(path: str | os.PathLike, target: Target) -> FileReport:
+    if target.kind == "video":
+        from apppreview.video import validate_video  # local: video imports this module
+
+        return validate_video(path, target)
     path = Path(path)
     report = FileReport(path=str(path))
     if not path.is_file():
@@ -202,4 +206,11 @@ def validate_images(paths, target: Target | str) -> Report:
 
 def identify(path: str | os.PathLike, store: str | None = None) -> list[str]:
     """Return the IDs of all targets that `path` already satisfies on its own."""
-    return [t.id for t in load_targets().values() if (store is None or t.store == store) and validate_file(path, t).ok]
+    from apppreview.video import is_video
+
+    want_video = is_video(path)
+    return [
+        t.id
+        for t in load_targets().values()
+        if (store is None or t.store == store) and (t.kind == "video") == want_video and validate_file(path, t).ok
+    ]

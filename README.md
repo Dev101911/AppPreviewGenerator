@@ -50,6 +50,44 @@ apppreview generate shot.png -t apple.iphone-6.9 --template dark --caption "Plan
 | `--template` | Place screenshots on a styled template (see below) |
 | `--caption`, `--subtitle` | Text per image, in input order (implies the `clean` template) |
 
+## App preview videos
+
+App Store app previews are 15–30 second videos with strict encoding rules. `apppreview`
+checks and converts them with ffmpeg, which must be installed (`brew install ffmpeg` or
+`apt install ffmpeg`). Preview targets end in `-preview`, e.g. `apple.iphone-6.9-preview`
+(`apppreview targets --store apple`).
+
+```bash
+apppreview validate demo.mov -t apple.iphone-6.9-preview
+apppreview generate demo.mov -t apple.iphone-6.9-preview -t apple.ipad-13-preview --start 3
+apppreview generate demo.mov -t apple.iphone-6.9-preview --template dark --frame phone --caption "See it in action"
+apppreview slideshow shots/*.png -t apple.iphone-6.9-preview --template clean --caption A --caption B --caption C
+```
+
+![Frames from a templated preview video and a slideshow](docs/images/video-preview.png)
+
+- **`generate` with a recording** scales to the accepted size (886×1920 for most
+  iPhones, 1200×1600 for iPads) and caps the frame rate at 30 fps.
+- **Length.** Recordings longer than 30 s are trimmed; pick the segment with `--start`.
+  Clips shorter than 15 s are refused unless you pass `--extend`, which holds the last frame.
+- **Encoding.** Output is H.264 High@4.0 at about 11 Mbps with stereo 256 kbps AAC; a
+  silent track is added if the recording has none. Vision Pro previews (3840×2160) exceed
+  what H.264 Level 4.0 allows, so they are encoded as ProRes 422 HQ `.mov`.
+- **Templates and frames** work as for screenshots: the video plays inside the device
+  frame, under the caption.
+- **`slideshow`** turns screenshots into a preview with crossfades, fitting the total into
+  15–30 s automatically (or set `--seconds` per slide).
+- **In `apppreview.yaml`**, give a screen a video `source` and add a `-preview` target.
+  Video sources go to preview targets and images to screenshot targets. Screens can set
+  `start` and `extend`.
+- **Upload layout.** With `--layout fastlane`, previews go to
+  `fastlane/app_previews/<locale>/` with the App Store Connect preview type
+  (`IPHONE_67_...`) in the file name, as deliver expects. The poster frame defaults to
+  5 s; change it with deliver's `preview_frame_time_code`.
+
+Google Play's promo video is a YouTube URL in Play Console, not an uploaded file, so it
+isn't handled here.
+
 ## Capturing screenshots
 
 Take screenshots straight from a booted iOS Simulator (macOS with Xcode) or an Android
@@ -243,6 +281,11 @@ App icons are plain resizes: `apppreview generate icon.png -t google.icon -t app
 gives a 512×512 Play icon (transparency kept) and a 1024×1024 opaque App Store icon.
 
 ## What gets checked
+
+For app preview videos: container, codec and H.264 profile/level, exact resolution,
+15–30 s length, at most 30 fps, stereo AAC/PCM audio at 44.1/48 kHz, and the 500 MB limit.
+
+For images:
 
 - Exact pixel sizes (Apple) or size, aspect-ratio rules (Google)
 - Format (detected from content, not extension): PNG/JPEG

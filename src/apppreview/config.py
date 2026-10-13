@@ -27,6 +27,7 @@ from apppreview.locales import language, store_locale
 from apppreview.specs import get_target
 from apppreview.template import Template, load_template
 from apppreview.validate import Report, validate_images
+from apppreview.video import is_video, produce_video
 
 DEFAULT_CONFIG = "apppreview.yaml"
 STORE_NAMES = {"apple": "App Store", "google": "Google Play"}
@@ -49,6 +50,8 @@ class Screen(BaseModel):
     )
     subtitle: LocalizedText | None = None
     template: str | dict | None = Field(None, description="Template overrides for this screen only")
+    start: float = Field(0.0, ge=0, description="Video sources: start time in seconds (previews are at most 30s)")
+    extend: bool = Field(False, description="Video sources: hold the last frame to reach the 15s minimum")
 
 
 class Graphic(BaseModel):
@@ -161,6 +164,8 @@ class Job:
     template: Template | None
     caption: str | None  # title for graphics
     subtitle: str | None
+    start: float = 0.0  # video sources only
+    extend: bool = False
 
 
 @dataclass
@@ -254,26 +259,33 @@ def plan(
     for target in targets:
         if skip(target):
             continue
+        wants_video = target.kind == "video"
+        # A screen applies to a target when it has a source for it of the right kind:
+        # recordings (.mp4/.mov/.m4v) for preview targets, images for everything else.
+        applicable = []
+        for screen in config.screens:
+            raw = screen.source if isinstance(screen.source, str) else pick_for_target(screen.source, target.id)
+            if raw is not None and is_video(raw) == wants_video:
+                applicable.append((screen, raw))
+        if not applicable:
+            kind = "video (.mp4/.mov)" if wants_video else "image"
+            raise AppPreviewError(
+                "missing_source", f"No screen has a {kind} source for {target.id}; add one or remove the target"
+            )
+        templates = [screen_templates[screen.id] for screen, _ in applicable]
+        fmt = None if wants_video else config.format
         check_target_options(
-            target,
-            len(config.screens),
-            config.format,
-            None,
-            any(screen_templates.values()),
-            any(t and t.screenshot.frame for t in screen_templates.values()),
+            target, len(applicable), fmt, None, any(templates), any(t and t.screenshot.frame for t in templates)
         )
-        fmt = config.format or target.formats[0]
+        fmt = fmt or target.formats[0]
         for locale in locales:
-            for index, screen in enumerate(config.screens, start=1):
-                raw = screen.source if isinstance(screen.source, str) else pick_for_target(screen.source, target.id)
-                if raw is None:
-                    raise AppPreviewError(
-                        "missing_source", f"Screen '{screen.id}' has no source for {target.id} and no 'default'"
-                    )
+            for index, (screen, raw) in enumerate(applicable, start=1):
                 source = base_dir / raw.format(locale=locale or "", target=target.id, screen=screen.id)
                 if not source.is_file():
                     missing.append(str(source))
                 what = f"Screen '{screen.id}'"
+                filename = f"{index:02d}_{screen.id}.mp4" if wants_video else output_name(index, screen.id, fmt)
+                dest = layout_path(layout, out_root, target, locale, filename, config.default_locale)
                 jobs.append(
                     Job(
                         kind="screen",
@@ -281,12 +293,12 @@ def plan(
                         target_id=target.id,
                         locale=locale,
                         source=source,
-                        dest=layout_path(
-                            layout, out_root, target, locale, output_name(index, screen.id, fmt), config.default_locale
-                        ),
+                        dest=dest.with_suffix("") if wants_video else dest,
                         template=for_locale(screen_templates[screen.id], locale),
                         caption=localized(screen.caption, locale, f"{what} caption"),
                         subtitle=localized(screen.subtitle, locale, f"{what} subtitle"),
+                        start=screen.start,
+                        extend=screen.extend,
                     )
                 )
     for g in graphics:
@@ -340,9 +352,25 @@ def build(
     groups: dict[tuple[str | None, str], list[Output]] = {}
     for job in jobs:
         target = get_target(job.target_id)
-        if job.source and job.source not in cache:
+        if job.source and job.source not in cache and not is_video(job.source):
             cache[job.source] = load_source(job.source)
-        if job.kind == "graphic":
+        if job.kind == "screen" and target.kind == "video":
+            dest, out_size, fmt, scale, warnings = produce_video(
+                job.source,
+                target,
+                job.dest,
+                mode=config.mode,
+                background=config.background,
+                template=job.template,
+                caption=job.caption,
+                subtitle=job.subtitle,
+                locale=job.locale,
+                start=job.start,
+                extend=job.extend,
+                dry_run=dry_run,
+            )
+            job.dest = dest
+        elif job.kind == "graphic":
             fmt = config.format or target.formats[0]
             out_size, scale, warnings = target.sizes[0], None, []
             if not dry_run:

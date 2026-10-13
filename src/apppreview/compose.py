@@ -7,10 +7,10 @@ from dataclasses import dataclass, field
 from functools import lru_cache
 from importlib import resources
 
-from PIL import Image, ImageColor, ImageDraw, ImageFilter, ImageFont, ImageOps, features
+from PIL import Image, ImageChops, ImageColor, ImageDraw, ImageFilter, ImageFont, ImageOps, features
 
 from apppreview.errors import AppPreviewError
-from apppreview.frames import FrameStyle, apply_frame
+from apppreview.frames import FrameStyle, aspect_warning, frame_layer
 from apppreview.locales import is_rtl, language
 from apppreview.specs import Size
 from apppreview.template import Background, Template, TextStyle
@@ -206,15 +206,30 @@ def _rounded_mask(size: Size, radius: int) -> Image.Image:
     return mask
 
 
-def compose(
-    screenshot: Image.Image,
-    size: Size,
+@dataclass
+class Layers:
+    """A template laid out for content of a given size.
+
+    Content (a screenshot, or each frame of a video) goes inside `screen`, clipped by
+    `mask`, between `under` (background, text, shadow) and `over` (device frame or border).
+    """
+
+    under: Image.Image  # RGBA, canvas size
+    over: Image.Image | None  # RGBA, canvas size
+    screen: tuple[int, int, int, int]  # x, y, width, height on the canvas
+    mask: Image.Image  # L, screen size
+    scale: float  # content pixels -> canvas pixels
+    warnings: list[str]
+
+
+def layout(
     template: Template,
+    size: Size,
+    content_size: Size,
     caption: str | None = None,
     subtitle: str | None = None,
     locale: str | None = None,
-) -> tuple[Image.Image, float, list[str]]:
-    """Return an RGB image of `size`, the scale applied to the screenshot, and warnings."""
+) -> Layers:
     warnings: list[str] = []
     w, h = size
     unit = min(w, h)
@@ -247,43 +262,89 @@ def compose(
         y += block.height + line_gap
 
     style = template.screenshot
-    shot = ImageOps.exif_transpose(screenshot).convert("RGBA")
+    frame = None
     if style.frame:
-        frame = style.frame
-        shot = apply_frame(shot, FrameStyle(frame.name, _rgba(frame.color), frame.island), warnings)
-    max_w, max_h = style.max_width * w, max(1, region_bottom - region_top)
-    scale = min(max_w / shot.width, max_h / shot.height)
-    if scale > 1.5:
-        warnings.append(f"Screenshot is upscaled {scale:.2f}x; output may look blurry")
-    shot_size = (max(1, round(shot.width * scale)), max(1, round(shot.height * scale)))
-    shot = shot.resize(shot_size, Image.Resampling.LANCZOS)
-    x = round((w - shot_size[0]) / 2)
-    y = round(region_top + (max_h - shot_size[1]) / 2)
-    if style.frame:
-        # The frame already shapes the device; its own alpha is the outline.
-        radius, mask = 0, shot.getchannel("A")
+        frame = frame_layer(content_size, FrameStyle(style.frame.name, _rgba(style.frame.color), style.frame.island))
+        warning = aspect_warning(content_size, frame.screen)
+        if warning:
+            warnings.append(warning)
+        body_size = frame.device.size
     else:
-        radius = min(round(style.corner_radius * unit), min(shot_size) // 2)
-        mask = _rounded_mask(shot_size, radius)
+        body_size = content_size
+
+    # Scale the device (or bare screenshot) to fit the region below/above the text.
+    max_w, max_h = style.max_width * w, max(1, region_bottom - region_top)
+    body_scale = min(max_w / body_size[0], max_h / body_size[1])
+    scaled = (max(1, round(body_size[0] * body_scale)), max(1, round(body_size[1] * body_scale)))
+    x = round((w - scaled[0]) / 2)
+    y = round(region_top + (max_h - scaled[1]) / 2)
+
+    over = None
+    if frame:
+        device = frame.device.resize(scaled, Image.Resampling.LANCZOS)
+        fx, fy, fw, fh = frame.screen
+        screen = (
+            x + round(fx * body_scale),
+            y + round(fy * body_scale),
+            max(1, round(fw * body_scale)),
+            max(1, round(fh * body_scale)),
+        )
+        mask = frame.mask.resize(screen[2:], Image.Resampling.LANCZOS)
+        # Silhouette for the shadow: the device body plus its (transparent) screen.
+        silhouette = device.getchannel("A")
+        silhouette.paste(255, (screen[0] - x, screen[1] - y), mask)
+        over = Image.new("RGBA", size, (0, 0, 0, 0))
+        over.alpha_composite(device, (x, y))
+        content_scale = screen[2] / content_size[0]
+    else:
+        screen = (x, y, *scaled)
+        radius = min(round(style.corner_radius * unit), min(scaled) // 2)
+        mask = silhouette = _rounded_mask(scaled, radius)
+        if style.border:
+            over = Image.new("RGBA", size, (0, 0, 0, 0))
+            width = max(1, round(style.border_width * unit))
+            ImageDraw.Draw(over).rounded_rectangle(
+                (x, y, x + scaled[0] - 1, y + scaled[1] - 1), radius, outline=_rgba(style.border), width=width
+            )
+        content_scale = body_scale
+
+    if content_scale > 1.5:
+        warnings.append(f"Screenshot is upscaled {content_scale:.2f}x; output may look blurry")
 
     if style.shadow:
         layer = Image.new("RGBA", size, (0, 0, 0, 0))
         offset = round(style.shadow.offset * unit)
-        layer.paste(Image.new("RGBA", shot_size, _rgba(style.shadow.color)), (x, y + offset), mask)
+        layer.paste(Image.new("RGBA", scaled, _rgba(style.shadow.color)), (x, y + offset), silhouette)
         blur = style.shadow.blur * unit
         canvas.alpha_composite(layer.filter(ImageFilter.GaussianBlur(blur)) if blur else layer)
 
+    return Layers(canvas, over, screen, mask, content_scale, warnings)
+
+
+def place(layers: Layers, content: Image.Image) -> Image.Image:
+    """Put `content` into the screen area and return the flattened RGB image."""
+    x, y, sw, sh = layers.screen
+    shot = ImageOps.fit(content.convert("RGBA"), (sw, sh), Image.Resampling.LANCZOS)
     # Transparent pixels in the screenshot show the background, as they would on screen.
-    shot_alpha = Image.composite(shot.getchannel("A"), Image.new("L", shot_size, 0), mask)
-    shot.putalpha(shot_alpha)
+    shot.putalpha(ImageChops.multiply(shot.getchannel("A"), layers.mask))
+    canvas = layers.under.copy()
     canvas.alpha_composite(shot, (x, y))
-
-    if style.border and not style.frame:
-        width = max(1, round(style.border_width * unit))
-        ImageDraw.Draw(canvas).rounded_rectangle(
-            (x, y, x + shot_size[0] - 1, y + shot_size[1] - 1), radius, outline=_rgba(style.border), width=width
-        )
-
-    flat = Image.new("RGB", size, (255, 255, 255))
+    if layers.over:
+        canvas.alpha_composite(layers.over)
+    flat = Image.new("RGB", canvas.size, (255, 255, 255))
     flat.paste(canvas, mask=canvas.getchannel("A"))
-    return flat, scale, warnings
+    return flat
+
+
+def compose(
+    screenshot: Image.Image,
+    size: Size,
+    template: Template,
+    caption: str | None = None,
+    subtitle: str | None = None,
+    locale: str | None = None,
+) -> tuple[Image.Image, float, list[str]]:
+    """Return an RGB image of `size`, the scale applied to the screenshot, and warnings."""
+    shot = ImageOps.exif_transpose(screenshot)
+    layers = layout(template, size, shot.size, caption, subtitle, locale)
+    return place(layers, shot), layers.scale, layers.warnings

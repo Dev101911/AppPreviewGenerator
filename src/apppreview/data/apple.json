@@ -5,127 +5,450 @@
   "verified": "2026-10-12",
   "defaults": {
     "kind": "screenshot",
-    "formats": ["png", "jpeg"],
+    "formats": [
+      "png",
+      "jpeg"
+    ],
     "alpha": false,
-    "count": {"min": 1, "max": 10}
+    "count": {
+      "min": 1,
+      "max": 10
+    }
   },
   "targets": [
     {
       "id": "apple.iphone-duo-outer",
       "name": "iPhone Duo (outer display)",
-      "sizes": [[1398, 2034], [2034, 1398]],
+      "sizes": [
+        [
+          1398,
+          2034
+        ],
+        [
+          2034,
+          1398
+        ]
+      ],
       "required": "Required from April 2027 for apps built with the iOS 27.1 SDK or later."
     },
     {
       "id": "apple.iphone-duo-inner",
       "name": "iPhone Duo (inner display)",
-      "sizes": [[2007, 2853], [2853, 2007]],
+      "sizes": [
+        [
+          2007,
+          2853
+        ],
+        [
+          2853,
+          2007
+        ]
+      ],
       "required": "Required from April 2027 for apps built with the iOS 27.1 SDK or later."
     },
     {
       "id": "apple.iphone-6.9",
       "name": "iPhone 6.9\" (Dynamic Island, large)",
-      "sizes": [[1320, 2868], [1290, 2796], [1260, 2736], [2868, 1320], [2796, 1290], [2736, 1260]],
+      "sizes": [
+        [
+          1320,
+          2868
+        ],
+        [
+          1290,
+          2796
+        ],
+        [
+          1260,
+          2736
+        ],
+        [
+          2868,
+          1320
+        ],
+        [
+          2796,
+          1290
+        ],
+        [
+          2736,
+          1260
+        ]
+      ],
       "fallback": "apple.iphone-6.5"
     },
     {
       "id": "apple.iphone-6.5",
       "name": "iPhone 6.5\" (Face ID, large)",
-      "sizes": [[1284, 2778], [1242, 2688], [2778, 1284], [2688, 1242]],
+      "sizes": [
+        [
+          1284,
+          2778
+        ],
+        [
+          1242,
+          2688
+        ],
+        [
+          2778,
+          1284
+        ],
+        [
+          2688,
+          1242
+        ]
+      ],
       "required": "Required for iPhone apps if 6.9\" (Dynamic Island, large) screenshots are not provided."
     },
     {
       "id": "apple.iphone-6.3",
       "name": "iPhone 6.3\" (Dynamic Island, medium)",
-      "sizes": [[1206, 2622], [1179, 2556], [2622, 1206], [2556, 1179]],
+      "sizes": [
+        [
+          1206,
+          2622
+        ],
+        [
+          1179,
+          2556
+        ],
+        [
+          2622,
+          1206
+        ],
+        [
+          2556,
+          1179
+        ]
+      ],
       "required": "Required for iPhone apps.",
       "fallback": "apple.iphone-6.5"
     },
     {
       "id": "apple.iphone-6.1",
       "name": "iPhone 6.1\" (Face ID, medium)",
-      "sizes": [[1170, 2532], [1125, 2436], [1080, 2340], [2532, 1170], [2436, 1125], [2340, 1080]],
+      "sizes": [
+        [
+          1170,
+          2532
+        ],
+        [
+          1125,
+          2436
+        ],
+        [
+          1080,
+          2340
+        ],
+        [
+          2532,
+          1170
+        ],
+        [
+          2436,
+          1125
+        ],
+        [
+          2340,
+          1080
+        ]
+      ],
       "fallback": "apple.iphone-6.3"
     },
     {
       "id": "apple.iphone-5.5",
       "name": "iPhone 5.5\" (Home button, large)",
-      "sizes": [[1242, 2208], [2208, 1242]],
+      "sizes": [
+        [
+          1242,
+          2208
+        ],
+        [
+          2208,
+          1242
+        ]
+      ],
       "fallback": "apple.iphone-6.1"
     },
     {
       "id": "apple.iphone-4.7",
       "name": "iPhone 4.7\" (Home button, medium)",
-      "sizes": [[750, 1334], [1334, 750]],
+      "sizes": [
+        [
+          750,
+          1334
+        ],
+        [
+          1334,
+          750
+        ]
+      ],
       "fallback": "apple.iphone-5.5"
     },
     {
       "id": "apple.iphone-4",
       "name": "iPhone 4\" (Home button)",
-      "sizes": [[640, 1136], [640, 1096], [1136, 640], [1136, 600]],
+      "sizes": [
+        [
+          640,
+          1136
+        ],
+        [
+          640,
+          1096
+        ],
+        [
+          1136,
+          640
+        ],
+        [
+          1136,
+          600
+        ]
+      ],
       "fallback": "apple.iphone-4.7",
-      "notes": ["Smaller sizes (640x1096, 1136x600) are for screenshots without the status bar."]
+      "notes": [
+        "Smaller sizes (640x1096, 1136x600) are for screenshots without the status bar."
+      ]
     },
     {
       "id": "apple.iphone-3.5",
       "name": "iPhone 3.5\" (Home button)",
-      "sizes": [[640, 960], [640, 920], [960, 640], [960, 600]],
+      "sizes": [
+        [
+          640,
+          960
+        ],
+        [
+          640,
+          920
+        ],
+        [
+          960,
+          640
+        ],
+        [
+          960,
+          600
+        ]
+      ],
       "fallback": "apple.iphone-4",
-      "notes": ["Smaller sizes (640x920, 960x600) are for screenshots without the status bar."]
+      "notes": [
+        "Smaller sizes (640x920, 960x600) are for screenshots without the status bar."
+      ]
     },
     {
       "id": "apple.ipad-13",
       "name": "iPad 13\"",
-      "sizes": [[2064, 2752], [2048, 2732], [2752, 2064], [2732, 2048]],
+      "sizes": [
+        [
+          2064,
+          2752
+        ],
+        [
+          2048,
+          2732
+        ],
+        [
+          2752,
+          2064
+        ],
+        [
+          2732,
+          2048
+        ]
+      ],
       "required": "Required for apps that run on iPad."
     },
     {
       "id": "apple.ipad-12.9",
       "name": "iPad Pro 12.9\" (2nd generation)",
-      "sizes": [[2048, 2732], [2732, 2048]],
+      "sizes": [
+        [
+          2048,
+          2732
+        ],
+        [
+          2732,
+          2048
+        ]
+      ],
       "fallback": "apple.ipad-13"
     },
     {
       "id": "apple.ipad-11",
       "name": "iPad 11\"",
-      "sizes": [[1668, 2420], [1668, 2388], [1640, 2360], [1488, 2266], [2420, 1668], [2388, 1668], [2360, 1640], [2266, 1488]],
+      "sizes": [
+        [
+          1668,
+          2420
+        ],
+        [
+          1668,
+          2388
+        ],
+        [
+          1640,
+          2360
+        ],
+        [
+          1488,
+          2266
+        ],
+        [
+          2420,
+          1668
+        ],
+        [
+          2388,
+          1668
+        ],
+        [
+          2360,
+          1640
+        ],
+        [
+          2266,
+          1488
+        ]
+      ],
       "fallback": "apple.ipad-13"
     },
     {
       "id": "apple.ipad-10.5",
       "name": "iPad 10.5\"",
-      "sizes": [[1668, 2224], [2224, 1668]],
+      "sizes": [
+        [
+          1668,
+          2224
+        ],
+        [
+          2224,
+          1668
+        ]
+      ],
       "fallback": "apple.ipad-12.9"
     },
     {
       "id": "apple.ipad-9.7",
       "name": "iPad 9.7\"",
-      "sizes": [[1536, 2048], [1536, 2008], [768, 1024], [768, 1004], [2048, 1536], [2048, 1496], [1024, 768], [1024, 748]],
+      "sizes": [
+        [
+          1536,
+          2048
+        ],
+        [
+          1536,
+          2008
+        ],
+        [
+          768,
+          1024
+        ],
+        [
+          768,
+          1004
+        ],
+        [
+          2048,
+          1536
+        ],
+        [
+          2048,
+          1496
+        ],
+        [
+          1024,
+          768
+        ],
+        [
+          1024,
+          748
+        ]
+      ],
       "fallback": "apple.ipad-10.5",
-      "notes": ["Sizes ending in 2008/1496/1004/748 are for screenshots without the status bar."]
+      "notes": [
+        "Sizes ending in 2008/1496/1004/748 are for screenshots without the status bar."
+      ]
     },
     {
       "id": "apple.mac",
       "name": "Mac",
-      "sizes": [[2880, 1800], [2560, 1600], [1440, 900], [1280, 800]],
+      "sizes": [
+        [
+          2880,
+          1800
+        ],
+        [
+          2560,
+          1600
+        ],
+        [
+          1440,
+          900
+        ],
+        [
+          1280,
+          800
+        ]
+      ],
       "required": "Required for Mac apps."
     },
     {
       "id": "apple.tv",
       "name": "Apple TV",
-      "sizes": [[3840, 2160], [1920, 1080]],
+      "sizes": [
+        [
+          3840,
+          2160
+        ],
+        [
+          1920,
+          1080
+        ]
+      ],
       "required": "Required for Apple TV apps."
     },
     {
       "id": "apple.vision-pro",
       "name": "Apple Vision Pro",
-      "sizes": [[3840, 2160]],
+      "sizes": [
+        [
+          3840,
+          2160
+        ]
+      ],
       "required": "Required for Apple Vision Pro apps."
     },
     {
       "id": "apple.watch",
       "name": "Apple Watch",
-      "sizes": [[422, 514], [416, 496], [410, 502], [396, 484], [368, 448], [312, 390]],
+      "sizes": [
+        [
+          422,
+          514
+        ],
+        [
+          416,
+          496
+        ],
+        [
+          410,
+          502
+        ],
+        [
+          396,
+          484
+        ],
+        [
+          368,
+          448
+        ],
+        [
+          312,
+          390
+        ]
+      ],
       "uniform_size": true,
       "required": "Required for Apple Watch apps.",
       "notes": [
@@ -138,15 +461,536 @@
       "id": "apple.icon",
       "name": "App Store icon",
       "kind": "icon",
-      "formats": ["png"],
-      "count": {"min": 1, "max": 1},
-      "sizes": [[1024, 1024]],
+      "formats": [
+        "png"
+      ],
+      "count": {
+        "min": 1,
+        "max": 1
+      },
+      "sizes": [
+        [
+          1024,
+          1024
+        ]
+      ],
       "templates_allowed": false,
       "frames_allowed": false,
       "notes": [
         "Square, opaque artwork with no rounded corners; the system applies the mask.",
         "Usually supplied through the app's Xcode asset catalog."
       ]
+    },
+    {
+      "id": "apple.iphone-6.9-preview",
+      "name": "iPhone 6.9\" app preview",
+      "kind": "video",
+      "formats": [
+        "mp4",
+        "mov",
+        "m4v"
+      ],
+      "count": {
+        "min": 1,
+        "max": 3
+      },
+      "max_bytes": 524288000,
+      "sizes": [
+        [
+          886,
+          1920
+        ],
+        [
+          1920,
+          886
+        ]
+      ],
+      "preview_type": "IPHONE_67",
+      "templates_allowed": true,
+      "notes": [
+        "App previews are optional; up to 3 per device size and language.",
+        "Default poster frame is 5 seconds in; set preview_frame_time_code in fastlane to change it."
+      ]
+    },
+    {
+      "id": "apple.iphone-6.5-preview",
+      "name": "iPhone 6.5\" app preview",
+      "kind": "video",
+      "formats": [
+        "mp4",
+        "mov",
+        "m4v"
+      ],
+      "count": {
+        "min": 1,
+        "max": 3
+      },
+      "max_bytes": 524288000,
+      "sizes": [
+        [
+          886,
+          1920
+        ],
+        [
+          1920,
+          886
+        ]
+      ],
+      "preview_type": "IPHONE_65",
+      "templates_allowed": true,
+      "notes": [
+        "App previews are optional; up to 3 per device size and language.",
+        "Default poster frame is 5 seconds in; set preview_frame_time_code in fastlane to change it."
+      ]
+    },
+    {
+      "id": "apple.iphone-6.3-preview",
+      "name": "iPhone 6.3\" app preview",
+      "kind": "video",
+      "formats": [
+        "mp4",
+        "mov",
+        "m4v"
+      ],
+      "count": {
+        "min": 1,
+        "max": 3
+      },
+      "max_bytes": 524288000,
+      "sizes": [
+        [
+          886,
+          1920
+        ],
+        [
+          1920,
+          886
+        ]
+      ],
+      "preview_type": "IPHONE_61",
+      "templates_allowed": true,
+      "notes": [
+        "App previews are optional; up to 3 per device size and language.",
+        "Default poster frame is 5 seconds in; set preview_frame_time_code in fastlane to change it."
+      ]
+    },
+    {
+      "id": "apple.iphone-6.1-preview",
+      "name": "iPhone 6.1\" (Face ID, medium) app preview",
+      "kind": "video",
+      "formats": [
+        "mp4",
+        "mov",
+        "m4v"
+      ],
+      "count": {
+        "min": 1,
+        "max": 3
+      },
+      "max_bytes": 524288000,
+      "sizes": [
+        [
+          886,
+          1920
+        ],
+        [
+          1920,
+          886
+        ]
+      ],
+      "preview_type": "IPHONE_58",
+      "templates_allowed": true,
+      "notes": [
+        "App previews are optional; up to 3 per device size and language.",
+        "Default poster frame is 5 seconds in; set preview_frame_time_code in fastlane to change it."
+      ]
+    },
+    {
+      "id": "apple.iphone-5.5-preview",
+      "name": "iPhone 5.5\" app preview",
+      "kind": "video",
+      "formats": [
+        "mp4",
+        "mov",
+        "m4v"
+      ],
+      "count": {
+        "min": 1,
+        "max": 3
+      },
+      "max_bytes": 524288000,
+      "sizes": [
+        [
+          1080,
+          1920
+        ],
+        [
+          1920,
+          1080
+        ]
+      ],
+      "preview_type": "IPHONE_55",
+      "templates_allowed": true,
+      "notes": [
+        "App previews are optional; up to 3 per device size and language.",
+        "Default poster frame is 5 seconds in; set preview_frame_time_code in fastlane to change it."
+      ]
+    },
+    {
+      "id": "apple.iphone-4.7-preview",
+      "name": "iPhone 4.7\" app preview",
+      "kind": "video",
+      "formats": [
+        "mp4",
+        "mov",
+        "m4v"
+      ],
+      "count": {
+        "min": 1,
+        "max": 3
+      },
+      "max_bytes": 524288000,
+      "sizes": [
+        [
+          750,
+          1334
+        ],
+        [
+          1334,
+          750
+        ]
+      ],
+      "preview_type": "IPHONE_47",
+      "templates_allowed": true,
+      "notes": [
+        "App previews are optional; up to 3 per device size and language.",
+        "Default poster frame is 5 seconds in; set preview_frame_time_code in fastlane to change it."
+      ]
+    },
+    {
+      "id": "apple.iphone-4-preview",
+      "name": "iPhone 4\" app preview",
+      "kind": "video",
+      "formats": [
+        "mp4",
+        "mov",
+        "m4v"
+      ],
+      "count": {
+        "min": 1,
+        "max": 3
+      },
+      "max_bytes": 524288000,
+      "sizes": [
+        [
+          1080,
+          1920
+        ],
+        [
+          1920,
+          1080
+        ]
+      ],
+      "preview_type": "IPHONE_40",
+      "templates_allowed": true,
+      "notes": [
+        "App previews are optional; up to 3 per device size and language.",
+        "Default poster frame is 5 seconds in; set preview_frame_time_code in fastlane to change it."
+      ]
+    },
+    {
+      "id": "apple.ipad-13-preview",
+      "name": "iPad 13\" app preview",
+      "kind": "video",
+      "formats": [
+        "mp4",
+        "mov",
+        "m4v"
+      ],
+      "count": {
+        "min": 1,
+        "max": 3
+      },
+      "max_bytes": 524288000,
+      "sizes": [
+        [
+          1200,
+          1600
+        ],
+        [
+          1600,
+          1200
+        ]
+      ],
+      "preview_type": "IPAD_PRO_3GEN_129",
+      "templates_allowed": true,
+      "notes": [
+        "App previews are optional; up to 3 per device size and language.",
+        "Default poster frame is 5 seconds in; set preview_frame_time_code in fastlane to change it."
+      ]
+    },
+    {
+      "id": "apple.ipad-12.9-preview",
+      "name": "iPad Pro 12.9\" (2nd gen) app preview",
+      "kind": "video",
+      "formats": [
+        "mp4",
+        "mov",
+        "m4v"
+      ],
+      "count": {
+        "min": 1,
+        "max": 3
+      },
+      "max_bytes": 524288000,
+      "sizes": [
+        [
+          1200,
+          1600
+        ],
+        [
+          900,
+          1200
+        ],
+        [
+          1600,
+          1200
+        ],
+        [
+          1200,
+          900
+        ]
+      ],
+      "preview_type": "IPAD_PRO_129",
+      "templates_allowed": true,
+      "notes": [
+        "App previews are optional; up to 3 per device size and language.",
+        "Default poster frame is 5 seconds in; set preview_frame_time_code in fastlane to change it."
+      ]
+    },
+    {
+      "id": "apple.ipad-11-preview",
+      "name": "iPad 11\" app preview",
+      "kind": "video",
+      "formats": [
+        "mp4",
+        "mov",
+        "m4v"
+      ],
+      "count": {
+        "min": 1,
+        "max": 3
+      },
+      "max_bytes": 524288000,
+      "sizes": [
+        [
+          1200,
+          1600
+        ],
+        [
+          1600,
+          1200
+        ]
+      ],
+      "preview_type": "IPAD_PRO_3GEN_11",
+      "templates_allowed": true,
+      "notes": [
+        "App previews are optional; up to 3 per device size and language.",
+        "Default poster frame is 5 seconds in; set preview_frame_time_code in fastlane to change it."
+      ]
+    },
+    {
+      "id": "apple.ipad-10.5-preview",
+      "name": "iPad 10.5\" app preview",
+      "kind": "video",
+      "formats": [
+        "mp4",
+        "mov",
+        "m4v"
+      ],
+      "count": {
+        "min": 1,
+        "max": 3
+      },
+      "max_bytes": 524288000,
+      "sizes": [
+        [
+          1200,
+          1600
+        ],
+        [
+          1600,
+          1200
+        ]
+      ],
+      "preview_type": "IPAD_105",
+      "templates_allowed": true,
+      "notes": [
+        "App previews are optional; up to 3 per device size and language.",
+        "Default poster frame is 5 seconds in; set preview_frame_time_code in fastlane to change it."
+      ]
+    },
+    {
+      "id": "apple.ipad-9.7-preview",
+      "name": "iPad 9.7\" app preview",
+      "kind": "video",
+      "formats": [
+        "mp4",
+        "mov",
+        "m4v"
+      ],
+      "count": {
+        "min": 1,
+        "max": 3
+      },
+      "max_bytes": 524288000,
+      "sizes": [
+        [
+          900,
+          1200
+        ],
+        [
+          1200,
+          900
+        ]
+      ],
+      "preview_type": "IPAD_97",
+      "templates_allowed": true,
+      "notes": [
+        "App previews are optional; up to 3 per device size and language.",
+        "Default poster frame is 5 seconds in; set preview_frame_time_code in fastlane to change it."
+      ]
+    },
+    {
+      "id": "apple.mac-preview",
+      "name": "Mac app preview",
+      "kind": "video",
+      "formats": [
+        "mp4",
+        "mov",
+        "m4v"
+      ],
+      "count": {
+        "min": 1,
+        "max": 3
+      },
+      "max_bytes": 524288000,
+      "sizes": [
+        [
+          1920,
+          1080
+        ]
+      ],
+      "preview_type": "DESKTOP",
+      "templates_allowed": true,
+      "notes": [
+        "App previews are optional; up to 3 per device size and language.",
+        "Default poster frame is 5 seconds in; set preview_frame_time_code in fastlane to change it."
+      ]
+    },
+    {
+      "id": "apple.tv-preview",
+      "name": "Apple TV app preview",
+      "kind": "video",
+      "formats": [
+        "mp4",
+        "mov",
+        "m4v"
+      ],
+      "count": {
+        "min": 1,
+        "max": 3
+      },
+      "max_bytes": 524288000,
+      "sizes": [
+        [
+          1920,
+          1080
+        ]
+      ],
+      "preview_type": "APPLE_TV",
+      "templates_allowed": true,
+      "notes": [
+        "App previews are optional; up to 3 per device size and language.",
+        "Default poster frame is 5 seconds in; set preview_frame_time_code in fastlane to change it."
+      ]
+    },
+    {
+      "id": "apple.vision-pro-preview",
+      "name": "Apple Vision Pro app preview",
+      "kind": "video",
+      "formats": [
+        "mp4",
+        "mov",
+        "m4v"
+      ],
+      "count": {
+        "min": 1,
+        "max": 3
+      },
+      "max_bytes": 524288000,
+      "sizes": [
+        [
+          3840,
+          2160
+        ]
+      ],
+      "preview_type": "APPLE_VISION_PRO",
+      "templates_allowed": true,
+      "notes": [
+        "App previews are optional; up to 3 per device size and language.",
+        "Default poster frame is 5 seconds in; set preview_frame_time_code in fastlane to change it.",
+        "H.264 Level 4.0 cannot encode 3840x2160, so these are encoded as ProRes 422 HQ (.mov)."
+      ]
     }
-  ]
+  ],
+  "preview_source": "https://developer.apple.com/help/app-store-connect/reference/app-information/app-preview-specifications",
+  "video_rules": {
+    "min_seconds": 15,
+    "max_seconds": 30,
+    "max_fps": 30,
+    "h264": {
+      "containers": [
+        "mp4",
+        "mov",
+        "m4v"
+      ],
+      "max_level": 40,
+      "profiles": [
+        "Constrained Baseline",
+        "Baseline",
+        "Main",
+        "High"
+      ],
+      "target_mbps": [
+        10,
+        12
+      ],
+      "audio_codecs": [
+        "aac"
+      ]
+    },
+    "prores": {
+      "containers": [
+        "mov"
+      ],
+      "profiles": [
+        "HQ"
+      ],
+      "audio_codecs": [
+        "aac",
+        "pcm_s16le",
+        "pcm_s24le",
+        "pcm_s32le",
+        "pcm_s16be",
+        "pcm_s24be",
+        "pcm_s32be"
+      ]
+    },
+    "audio_kbps": 256,
+    "sample_rates": [
+      44100,
+      48000
+    ]
+  }
 }

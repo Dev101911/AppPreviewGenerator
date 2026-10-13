@@ -11,7 +11,7 @@ def test_every_target_is_well_formed():
         assert t.id.startswith(f"{t.store}.")
         assert t.output_sizes, f"{t.id} has no output size"
         assert t.count_min <= t.count_max
-        assert set(t.formats) <= {"png", "jpeg"}
+        assert set(t.formats) <= ({"mp4", "mov", "m4v"} if t.kind == "video" else {"png", "jpeg"})
         assert t.verified and t.source.startswith("https://")
         for size in t.output_sizes:
             assert t.accepts_size(*size), f"{t.id} rejects its own size {size}"

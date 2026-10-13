@@ -38,6 +38,13 @@ a stable `code`, a `message`, and often a `fix`.
 `width`, `height` and `matches` (targets it fits as-is). `apppreview capture simulators --json`
 maps Apple targets to simulator names to boot.
 
+**App preview videos** (needs ffmpeg)
+`apppreview generate demo.mov -t apple.iphone-6.9-preview --json` converts a recording;
+add `--start N` to choose the 30 s segment or `--extend` for clips under 15 s.
+`apppreview slideshow shots/*.png -t apple.iphone-6.9-preview --json` makes a preview from
+screenshots. Video sources must go to `-preview` targets and images to the others
+(`mixed_media` error otherwise).
+
 **Ready-to-upload folders**: add `--layout fastlane` (deliver + supply) or `--layout gpp`
 (Gradle Play Publisher) to `build`, `generate` or `graphic`. Skipped targets appear in
 `warnings[]`.
@@ -87,6 +94,10 @@ in `apppreview targets --json` work here.
 | `mixed_sizes` | Apple Watch screenshots must share one size |
 | `mixed_orientation` | Set mixes portrait and landscape (warning) |
 | `recommended_*` | Google Play promotion recommendations (warning) |
+| `duration`, `frame_rate` | Video length outside 15-30 s, or over 30 fps |
+| `video_codec`, `video_profile` | Not H.264 (High@4.0 or lower) or ProRes 422 HQ |
+| `audio` | Missing, not stereo, wrong codec or sample rate |
+| `bitrate` | Video bit rate well above Apple's 10-12 Mbps target (warning) |
 
 Fix almost all errors by running `generate` for the same target.
 
@@ -98,4 +109,5 @@ Common ones: `unknown_target`, `unknown_template`, `invalid_template`, `invalid_
 `too_many_images`, `invalid_size`, `invalid_format`, `text_count_mismatch`,
 `not_a_graphic_target`, `nothing_to_build`, `unknown_frame`, `invalid_frame`, `frame_not_found`,
 `frame_not_allowed`, `invalid_layout`, `unsupported_in_layout`, `tool_not_found`, `no_device`, `ambiguous_device`,
-`capture_failed`.
+`capture_failed`, `mixed_media`, `video_too_short`, `invalid_start`,
+`not_a_video_target`, `ffmpeg_failed`.
