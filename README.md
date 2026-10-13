@@ -143,6 +143,34 @@ Output goes to `out/<locale>/<target>/NN_<screen>.png`. Captions fall back from
 `de-DE` to `de` to `default`. All missing source files are reported at once, before
 anything is rendered. Run `apppreview schema config` for the JSON Schema.
 
+## Upload layouts: fastlane and Gradle Play Publisher
+
+Write output straight into the folder structure your upload tool reads:
+
+```bash
+apppreview build --layout fastlane   # deliver (Apple) + supply (Google)
+apppreview build --layout gpp        # Gradle Play Publisher (Google) + deliver (Apple)
+```
+
+or set `layout: fastlane` in `apppreview.yaml`. `generate` and `graphic` take `--layout` too.
+
+| Layout | Apple | Google |
+|---|---|---|
+| `default` | `out/<locale>/<target>/` | `out/<locale>/<target>/` |
+| `fastlane` | `out/fastlane/screenshots/<locale>/` | `out/fastlane/metadata/android/<locale>/images/phoneScreenshots/`, `featureGraphic.png`, ... |
+| `gpp` | same as fastlane | `out/play/listings/<locale>/graphics/phone-screenshots/`, `feature-graphic/`, ... |
+
+- **Locale folders.** Folders use each store's own codes: `ja-JP` in your config becomes
+  `ja` for Apple and `ja-JP` for Google; `he` becomes `iw-IL` for Google.
+- **Apple devices.** deliver tells devices apart by pixel size. iPad Pro 12.9" (2nd gen)
+  files get the `APP_IPAD_PRO_129` marker so they don't land in the 13" slot. Targets that
+  share a size (Apple TV and Vision Pro) produce a warning; build them separately.
+- **Unsupported targets.** Targets an upload tool has no folder for (Chromebook, XR,
+  Automotive, `apple.icon`) are skipped with a warning.
+
+Point fastlane at the output, e.g. `deliver(screenshots_path: "out/fastlane/screenshots")`,
+or copy `out/play` into your app module's `src/main/play`.
+
 ## Localization
 
 - **Captions per locale.** Captions and titles take a mapping of locale to text. A missing

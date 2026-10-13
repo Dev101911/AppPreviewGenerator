@@ -33,6 +33,10 @@ a stable `code`, a `message`, and often a `fix`.
 
 **Plan without writing files**: add `--dry-run` to `generate` or `build`.
 
+**Ready-to-upload folders**: add `--layout fastlane` (deliver + supply) or `--layout gpp`
+(Gradle Play Publisher) to `build`, `generate` or `graphic`. Skipped targets appear in
+`warnings[]`.
+
 **Captioned marketing screenshots for a whole listing**
 1. `apppreview schema config` gives the JSON Schema for `apppreview.yaml`
    (`apppreview schema template` for templates).
@@ -88,4 +92,4 @@ Common ones: `unknown_target`, `unknown_template`, `invalid_template`, `invalid_
 `missing_source`, `template_not_allowed` (target forbids captions/backgrounds),
 `too_many_images`, `invalid_size`, `invalid_format`, `text_count_mismatch`,
 `not_a_graphic_target`, `nothing_to_build`, `unknown_frame`, `invalid_frame`, `frame_not_found`,
-`frame_not_allowed`.
+`frame_not_allowed`, `invalid_layout`, `unsupported_in_layout`.
