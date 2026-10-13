@@ -64,6 +64,8 @@ apppreview generate demo.mov -t apple.iphone-6.9-preview --template dark --frame
 apppreview slideshow shots/*.png -t apple.iphone-6.9-preview --template clean --caption A --caption B --caption C
 ```
 
+![Frames from a templated preview video and a slideshow](docs/images/video-preview.png)
+
 - **`generate` with a recording** scales to the accepted size (886×1920 for most
   iPhones, 1200×1600 for iPads) and caps the frame rate at 30 fps.
 - **Length.** Recordings longer than 30 s are trimmed; pick the segment with `--start`.
