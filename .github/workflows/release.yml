@@ -1,26 +1,59 @@
 name: Release
 
-# Push a tag like v0.2.0 (matching __version__) to build, test and publish to PyPI.
-# One-time setup: see CONTRIBUTING.md, "Releasing".
+# Two ways to release the version in src/apppreview/__init__.py:
+#  - Run this workflow from `main` (Actions -> Release -> Run workflow). It creates the
+#    vX.Y.Z tag itself, after PyPI accepts the upload.
+#  - Or push a vX.Y.Z tag that matches __version__.
+# Either way it tests, builds, publishes to PyPI (trusted publishing), creates the GitHub
+# release, and moves the action's major tag (v0, v1, ...). Setup: CONTRIBUTING.md, "Releasing".
 on:
   push:
-    tags: ["v*"]
+    tags: ["v[0-9]+.[0-9]+.[0-9]+*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release; must equal __version__ on main (safety check)"
+        required: true
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      major: ${{ steps.version.outputs.major }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - name: Check the tag matches the package version
+      - name: Check the version and tag
+        id: version
+        env:
+          EVENT: ${{ github.event_name }}
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
           version=$(python -c "import re; print(re.search(r'__version__ = \"(.+?)\"', open('src/apppreview/__init__.py').read()).group(1))")
-          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
-            echo "Tag $GITHUB_REF_NAME does not match __version__ $version" >&2
-            exit 1
+          tag="v$version"
+          if [ "$EVENT" = "workflow_dispatch" ]; then
+            if [ "$GITHUB_REF" != "refs/heads/main" ]; then
+              echo "Run releases from main (this run is on $GITHUB_REF)" >&2; exit 1
+            fi
+            if [ "${INPUT_VERSION#v}" != "$version" ]; then
+              echo "Requested ${INPUT_VERSION} but __version__ on main is $version" >&2; exit 1
+            fi
+            if git ls-remote --exit-code --tags origin "refs/tags/$tag" >/dev/null; then
+              echo "$tag already exists; bump __version__ first" >&2; exit 1
+            fi
+          elif [ "$tag" != "$GITHUB_REF_NAME" ]; then
+            echo "Tag $GITHUB_REF_NAME does not match __version__ $version" >&2; exit 1
           fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "major=v${version%%.*}" >> "$GITHUB_OUTPUT"
+          echo "Releasing $tag from $GITHUB_SHA"
       - name: Install ffmpeg (video tests)
         run: sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
       - run: pip install -e ".[dev]" build twine
@@ -48,16 +81,24 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@release/v1
 
   github-release:
-    needs: publish
+    needs: [build, publish]
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      TAG: ${{ needs.build.outputs.tag }}
+      MAJOR: ${{ needs.build.outputs.major }}
+      GH_TOKEN: ${{ github.token }}
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: dist
           path: dist/
-      - name: Create GitHub release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" dist/* --repo "$GITHUB_REPOSITORY" --title "$GITHUB_REF_NAME" --generate-notes
+      - name: Create the GitHub release (and the tag, for manual runs)
+        # Tags created with GITHUB_TOKEN don't trigger workflows, so this can't re-run itself.
+        run: gh release create "$TAG" dist/* --target "$GITHUB_SHA" --title "$TAG" --generate-notes
+      - name: Move the action's major tag
+        run: |
+          git tag -f "$MAJOR" "$GITHUB_SHA"
+          git push -f origin "refs/tags/$MAJOR"
