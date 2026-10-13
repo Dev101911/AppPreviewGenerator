@@ -58,7 +58,7 @@ Exit codes: `0` success / all valid, `1` validation failures, `2` usage or input
 - ✅ Capture from iOS Simulator (`xcrun simctl`) and Android emulator (`adb`) (#16).
 - ✅ MCP server so AI agents can call targets/validate/generate as tools (#17).
 - ✅ App preview videos: validate, convert, templates/frames, slideshows, deliver layout (#21).
-- Distribution: PyPI, `pipx`/`uvx`, Homebrew; GitHub Action.
+- ✅ Distribution: PyPI release workflow, `pipx`/`uvx`, GitHub Action; Homebrew formula drafted (#18).
 - ✅ Spec freshness: weekly check against store docs that opens an issue (#19).
 
 ## Spec sources

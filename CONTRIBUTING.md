@@ -33,3 +33,25 @@ opens an issue titled "Store specs changed" that lists the differences. To resol
 
 Exit codes: `0` everything matches, `1` changes found, `2` a page couldn't be fetched or
 its layout changed so much that the checker needs updating.
+
+## Releasing
+
+Releases go to PyPI from the **Release** workflow when a `v*` tag is pushed.
+
+**One-time setup** (repository owner):
+
+1. On PyPI, add a *pending trusted publisher* for the project `apppreview`
+   (Account settings → Publishing): owner `Dev101911`, repository `AppPreviewGenerator`,
+   workflow `release.yml`, environment `pypi`. No API token is stored in the repo.
+2. In the GitHub repository settings, create an environment named `pypi`. Optionally
+   require a reviewer, so every publish needs a click.
+
+**Each release:**
+
+1. Bump `__version__` in `src/apppreview/__init__.py` and merge to `main`.
+2. Tag and push: `git tag v0.2.0 && git push origin v0.2.0`.
+3. The workflow checks the tag matches `__version__`, runs the tests, builds and checks
+   the sdist and wheel, publishes to PyPI, and creates a GitHub release.
+4. Move the action's major tag so `uses: Dev101911/AppPreviewGenerator@v1` picks up the
+   release: `git tag -f v1 && git push -f origin v1`.
+5. Homebrew: update the tap formula (see `packaging/homebrew/README.md`).

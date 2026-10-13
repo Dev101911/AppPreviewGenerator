@@ -22,3 +22,25 @@ jobs:
       - run: ruff check .
       - run: ruff format --check .
       - run: pytest -q
+
+  action:
+    # Exercise action.yml the way other repositories use it.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Render a feature graphic through the action
+        uses: ./
+        with:
+          args: graphic -t google.feature-graphic --title "Action test" -o fg.png
+      - id: validate
+        name: Validate it through the action
+        uses: ./
+        with:
+          args: validate fg.png -t google.feature-graphic
+      - name: Check outputs
+        env:
+          OK: ${{ steps.validate.outputs.ok }}
+          RESULT: ${{ steps.validate.outputs.result }}
+        run: |
+          test "$OK" = "true"
+          python3 -c "import json,sys; d=json.load(open(sys.argv[1])); assert d['ok'] and d['target'] == 'google.feature-graphic'" "$RESULT"
