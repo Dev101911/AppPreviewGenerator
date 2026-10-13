@@ -22,6 +22,9 @@ jobs:
       - run: ruff check .
       - run: ruff format --check .
       - run: pytest -q
+      - name: Docs page is up to date
+        if: matrix.python-version == '3.13'
+        run: python scripts/build_docs.py --check
 
   action:
     # Exercise action.yml the way other repositories use it.

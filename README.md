@@ -1,5 +1,7 @@
 # AppPreviewGenerator
 
+📖 **[Documentation](https://dev101911.github.io/AppPreviewGenerator/)**
+
 `apppreview` is a CLI that turns raw app screenshots into **App Store and Google Play
 screenshots that pass store validation**. It is built for developers and AI agents
 alike: every command has `--json` output and predictable exit codes.
