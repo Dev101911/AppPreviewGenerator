@@ -115,3 +115,28 @@ def test_frame_path_in_config_is_relative_to_config(tmp_path, frame_png):
     path = tmp_path / "app-preview.yaml"
     path.write_text(yaml.safe_dump(config))
     assert build(path).ok
+
+
+def test_manifest_frame_keeps_artwork_over_a_transparent_screen(tmp_path, frame_png):
+    # Apple's product bezels draw the Dynamic Island inside the transparent screen.
+    with Image.open(frame_png) as img:
+        frame = img.convert("RGBA")
+    ImageDraw.Draw(frame).rounded_rectangle((250, 80, 450, 130), 25, fill=(0, 0, 0, 255))
+    frame.save(tmp_path / "island.png")
+    manifest = tmp_path / "island.yaml"
+    manifest.write_text("image: island.png\nscreen: [50, 60, 600, 1280]\n")
+    device = apply_frame(shot((600, 1280)), FrameStyle(str(manifest)), [])
+    assert device.getpixel((350, 700)) == RED
+    assert device.getpixel((350, 105)) == (0, 0, 0, 255)  # island kept
+    assert device.getpixel((52, 62)) == (0, 160, 0, 255)  # rounded screen corner keeps the bezel
+
+
+def test_manifest_frame_with_opaque_screen(tmp_path):
+    frame = Image.new("RGBA", (700, 1400), (0, 160, 0, 255))
+    frame.paste((255, 255, 255, 255), (50, 60, 650, 1340))  # placeholder screen
+    frame.save(tmp_path / "solid.png")
+    manifest = tmp_path / "solid.yaml"
+    manifest.write_text("image: solid.png\nscreen: [50, 60, 600, 1280]\n")
+    device = apply_frame(shot((600, 1280)), FrameStyle(str(manifest)), [])
+    assert device.getpixel((350, 700)) == RED
+    assert device.getpixel((20, 700)) == (0, 160, 0, 255)

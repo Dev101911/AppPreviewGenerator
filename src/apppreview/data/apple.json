@@ -2,7 +2,7 @@
   "store": "apple",
   "name": "Apple App Store",
   "source": "https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications",
-  "verified": "2026-10-12",
+  "verified": "2026-10-21",
   "defaults": {
     "kind": "screenshot",
     "formats": [
@@ -29,7 +29,10 @@
           1398
         ]
       ],
-      "required": "Required from April 2027 for apps built with the iOS 27.1 SDK or later."
+      "required": "Required from April 2027 for apps built with the iOS 27.1 SDK or later.",
+      "notes": [
+        "Submitting iPhone Duo screenshots shows an \"optimized for iPhone Duo\" badge on the product page."
+      ]
     },
     {
       "id": "apple.iphone-duo-inner",
@@ -44,7 +47,10 @@
           2007
         ]
       ],
-      "required": "Required from April 2027 for apps built with the iOS 27.1 SDK or later."
+      "required": "Required from April 2027 for apps built with the iOS 27.1 SDK or later.",
+      "notes": [
+        "Submitting iPhone Duo screenshots shows an \"optimized for iPhone Duo\" badge on the product page."
+      ]
     },
     {
       "id": "apple.iphone-6.9",
@@ -453,7 +459,7 @@
       "required": "Required for Apple Watch apps.",
       "notes": [
         "422x514: Ultra 4, Ultra 3. 410x502: Ultra 2, Ultra. 416x496: Series 12, 11, 10.",
-        "396x484: Series 9, 8, 7. 368x448: Series 6, 5, 4, SE. 312x390: Series 3, 2, 1.",
+        "396x484: Series 9, 8, 7. 368x448: Series 6, 5, 4, SE 3, SE 2, SE. 312x390: Series 3, 2, 1.",
         "Use one size consistently across all localizations."
       ]
     },

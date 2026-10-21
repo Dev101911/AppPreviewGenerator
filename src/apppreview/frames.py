@@ -130,7 +130,12 @@ def _custom(path: Path) -> FrameLayer:
         raise AppPreviewError("frame_not_found", f"Cannot read frame image {path}: {exc}") from None
     if screen:
         x, y, sw, sh = screen
-        # Cut the screen out so content placed underneath shows through.
+        transparent = frame.getchannel("A").crop((x, y, x + sw, y + sh)).point(lambda a: 255 if a < 128 else 0)
+        if transparent.histogram()[255] >= sw * sh // 2:
+            # The screen is already see-through: keep what the artwork draws over it (a Dynamic
+            # Island, a camera notch, rounded corners) and show content only where it's clear.
+            return FrameLayer(frame, screen, transparent.filter(ImageFilter.MaxFilter(5)))
+        # An opaque screen (e.g. a placeholder image): cut it out so content shows through.
         frame.paste(Image.new("RGBA", (sw, sh), (0, 0, 0, 0)), (x, y))
         return FrameLayer(frame, screen, Image.new("L", (sw, sh), 255))
     rect, mask = find_screen(frame)

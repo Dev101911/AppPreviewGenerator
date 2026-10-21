@@ -199,6 +199,10 @@ image: my-phone-frame.png
 screen: [72, 69, 1206, 2622]          # x, y, width, height of the screen in the PNG (example values)
 ```
 
+If the screen in the PNG is transparent, anything the artwork draws over it (a Dynamic
+Island, a camera notch, rounded corners) stays on top of the screenshot. If the screen is
+opaque, the whole rectangle is replaced by the screenshot.
+
 Frames are rejected for Wear OS and Android Automotive, where Google forbids them.
 
 ## Project config: `app-preview build`

@@ -81,8 +81,13 @@ class Report:
     fingerprints: dict[str, str] = field(default_factory=dict)
 
 
+def apple_article(document: str) -> str:
+    # Only the article: <main> also holds the help site's sidebar, whose edits aren't spec changes.
+    return page_text(document, "<article", "</article>")
+
+
 def check_apple_screenshots(document: str, report: Report) -> None:
-    text = page_text(document, "<main", "</main>")
+    text = apple_article(document)
     report.fingerprints["apple_screenshots"] = fingerprint(text)
     page = {(int(w), int(h)) for w, h in DIMENSION.findall(text)}
     if not page:
@@ -100,7 +105,7 @@ def check_apple_screenshots(document: str, report: Report) -> None:
 
 
 def check_apple_previews(document: str, report: Report) -> None:
-    text = page_text(document, "<main", "</main>")
+    text = apple_article(document)
     report.fingerprints["apple_previews"] = fingerprint(text)
     # The page also lists device resolutions, so only check that our accepted sizes are still there.
     page = {(int(w), int(h)) for w, h in DIMENSION.findall(text)}

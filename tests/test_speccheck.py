@@ -15,12 +15,13 @@ APPLE_SIZES = sorted(
 
 def apple_page(sizes=APPLE_SIZES, extra=""):
     rows = "".join(f"<td>{w} x {h}</td>" for w, h in sizes)
-    return f"<html><main><h1>Screenshot specifications</h1><table>{rows}</table>{extra}</main></html>"
+    article = f"<article><h1>Screenshot specifications</h1><table>{rows}</table>{extra}</article>"
+    return f"<html><main><nav>Sidebar</nav>{article}</main></html>"
 
 
 def apple_previews_page():
     sizes = {s for t in load_targets().values() if t.kind == "video" for s in t.sizes}
-    return "<main>" + "".join(f"<td>{w} x {h}</td>" for w, h in sorted(sizes)) + "</main>"
+    return "<article>" + "".join(f"<td>{w} x {h}</td>" for w, h in sorted(sizes)) + "</article>"
 
 
 def google_article(body):
@@ -90,3 +91,12 @@ def test_bundled_fingerprints_cover_every_page():
         "apple_previews",
         "google_screenshots",
     }
+
+
+def test_apple_sidebar_edits_are_not_wording_changes():
+    page = apple_page()
+    other = page.replace("<nav>Sidebar</nav>", "<nav>Sidebar with a new help topic</nav>")
+    a, b = speccheck.Report(), speccheck.Report()
+    speccheck.check_apple_screenshots(page, a)
+    speccheck.check_apple_screenshots(other, b)
+    assert a.fingerprints == b.fingerprints
