@@ -8,6 +8,16 @@ uv venv && uv pip install -e ".[dev]"
 .venv/bin/ruff check . && .venv/bin/ruff format --check .
 ```
 
+Before opening a PR, run everything CI checks in one go:
+
+```bash
+scripts/check.sh
+```
+
+It runs ruff, the tests, the docs page check and the action's smoke test (through the CLI) on
+one Python, creating `.venv` with uv if needed. CI (`.github/workflows/ci.yml`) still runs on
+every PR, across Python 3.10 to 3.13, and has to pass before merging.
+
 ## Documentation site
 
 `docs/index.html` is the GitHub Pages site. It is generated: edit `docs/_template.html`
