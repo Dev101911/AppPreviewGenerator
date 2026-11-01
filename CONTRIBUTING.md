@@ -44,7 +44,8 @@ cross-platform Python CLI, so nearly all of its work runs on the PC.
 - **Never:**
   - let the PC connect back to the Mac: no remote build script, no Remote Login, no Tailscale rule
     from the PC to the Mac. The Mac reaches the PC, never the other way round.
-  - put release or publishing credentials on the PC (PyPI or GitHub tokens, Homebrew tap keys).
+  - put release or publishing credentials on the PC (PyPI tokens, Homebrew tap keys, or any GitHub
+    token beyond the PC's own one, which is limited to these repos' contents, issues and PRs).
   - push to `main`, or force-push.
 
 The tests don't need macOS: `capture ios` is tested with a fake `simctl`, so a Linux run covers
