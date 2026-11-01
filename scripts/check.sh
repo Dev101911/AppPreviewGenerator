@@ -8,7 +8,7 @@
 # CI still runs on every PR, across Python 3.10 to 3.13. This doesn't replace that matrix.
 #
 # Uses .venv (created with uv if it's missing). Video tests are skipped when ffmpeg isn't installed,
-# as they would be in pytest; install it (brew install ffmpeg) to run them too.
+# as they would be in pytest; install it (brew install ffmpeg, or apt install ffmpeg on Ubuntu) to run them too.
 #
 # Usage:  scripts/check.sh
 #

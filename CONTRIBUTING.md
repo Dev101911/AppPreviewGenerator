@@ -18,6 +18,40 @@ It runs ruff, the tests, the docs page check and the action's smoke test (throug
 one Python, creating `.venv` with uv if needed. CI (`.github/workflows/ci.yml`) still runs on
 every PR, across Python 3.10 to 3.13, and has to pass before merging.
 
+## Where work runs: the build PC first
+
+**Every task that can run on the build PC runs there.** The build PC is an Ubuntu machine reached
+over SSH and Tailscale. The Mac is kept for work that needs macOS, and for orchestrating: splitting
+tasks, handing work to the PC, reviewing what comes back, and opening PRs. The MacBook slows down
+when many tasks run at once, so anything it doesn't have to do goes elsewhere. `app-preview` is a
+cross-platform Python CLI, so nearly all of its work runs on the PC.
+
+- **Runs on the PC:** development, the tests and `scripts/check.sh`, docs (including
+  `scripts/build_docs.py`), store spec checks, Android capture (`capture android` via `adb`), video
+  work with ffmpeg (`generate` for `-preview` targets, `slideshow`), and issue admin.
+- **Runs on the Mac:** `capture ios`, `capture simulators`, and anything else that needs Xcode or
+  the simulator. The Mac also orchestrates: it reviews the PC's branches, opens every PR and moves
+  the board, even for work done entirely on the PC.
+- **Releases** stay where their credentials are: the Release workflow (`release.yml`) publishes
+  through PyPI trusted publishing on GitHub. No tokens are copied to the PC.
+- **Handing work over:** work moves between the machines only as pushed branches.
+  - The Mac session creates the issue branch, `issue-<n>-<slug>`, and pushes it. The PC works on
+    `issue-<n>-<slug>-pc`, based on it, and pushes that.
+  - A change that needs an iOS capture check gets that check on the Mac before the PR: the Mac
+    merges the PC branch back, runs the check and opens the PR.
+  - A change the PC's own checks cover (`scripts/check.sh`) can be finished on the PC. The Mac only
+    reviews it, opens the PR and moves the board.
+- **Never:**
+  - let the PC connect back to the Mac: no remote build script, no Remote Login, no Tailscale rule
+    from the PC to the Mac. The Mac reaches the PC, never the other way round.
+  - put release or publishing credentials on the PC (PyPI or GitHub tokens, Homebrew tap keys).
+  - push to `main`, or force-push.
+
+The tests don't need macOS: `capture ios` is tested with a fake `simctl`, so a Linux run covers
+it. Setting up the PC needs uv (`curl -LsSf https://astral.sh/uv/install.sh | sh`, since Ubuntu's
+Python has no `venv` or `pip` without extra packages) and ffmpeg (`sudo apt install ffmpeg`).
+Without ffmpeg the video tests are skipped.
+
 ## Documentation site
 
 `docs/index.html` is the GitHub Pages site. It is generated: edit `docs/_template.html`
